@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+results/images/
+results/plots/
+results/*.csv
+!results/.gitkeep
+results/manual_counts.csv
+*.log
+.env
+.ipynb_checkpoints/
+.venv/
+results/app/

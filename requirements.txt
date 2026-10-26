@@ -1,0 +1,23 @@
+# Core generation stack (GPU). Pin diffusers >= 0.30 for callback_on_step_end + denoising_start.
+torch>=2.3
+diffusers>=0.30
+transformers>=4.44
+accelerate>=0.33
+safetensors>=0.4
+huggingface_hub>=0.24
+# Bench
+pandas>=2.0
+numpy
+pyyaml
+pillow
+matplotlib
+tabulate                # pandas.to_markdown needs it (plot.py, decider_eval.py)
+tqdm
+# Scoring (install on the GPU box; heavy)
+easyocr                 # OCR for the text group
+# hpsv2                 # optional; large download
+# Decider
+requests
+# Tests
+pytest
+gradio>=4.44

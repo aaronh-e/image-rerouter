@@ -1,0 +1,11 @@
+# Enough to run the unit tests, the prompt builder, the compat check and plots
+# on a laptop with no GPU.
+pandas>=2.0
+numpy
+pyyaml
+pillow
+matplotlib
+tabulate                # pandas.to_markdown needs it (plot.py, decider_eval.py)
+huggingface_hub>=0.24
+requests
+pytest

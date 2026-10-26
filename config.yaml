@@ -1,0 +1,65 @@
+# Every knob the benchmark uses lives here, so a run is reproducible from
+# (this file + git commit + prompt file + seed). bench/run.py logs the commit
+# hash and the GPU name into every results row.
+
+models:
+  large: stabilityai/stable-diffusion-xl-base-1.0
+  small: segmind/SSD-1B
+  tiny: segmind/Segmind-Vega            # optional third tier (stretch)
+  vae: madebyollin/sdxl-vae-fp16-fix    # shared VAE; avoids NaN/black images at fp16
+  # Which model's text encoders to share. SSD-1B ships its own copies; whether
+  # they are byte-identical to SDXL's is checked by bench/compat_check.py.
+  text_encoders_from: large
+
+generation:
+  steps: 30                 # total denoising steps for every method
+  width: 1024
+  height: 1024
+  guidance_scale: 7.5       # same for both models (fairness rule), even though
+                            # Segmind recommends 9.0 for SSD-1B alone
+  scheduler: EulerDiscreteScheduler   # both models ship this one
+  negative_prompt: ""       # keep empty so quality differences come from the models
+  dtype: float16
+
+seeds: [42, 1234]
+
+# Fraction of the TOTAL steps run by the *first* model. 0.0 and 1.0 reproduce
+# the single-model controls, which is a useful sanity check on the sweep code.
+switch_fractions: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+
+# Control #3: the large model alone with fewer steps. "The line to beat."
+control_step_counts: [12, 18, 24, 30]
+
+handoff:
+  impl: swap        # "swap"  = one pipeline, swap the UNet mid-run (needs shared VAE + text encoders)
+                    # "twopipe" = denoising_end / denoising_start between two pipelines (works for any pair)
+  warmup_runs: 1    # first run is discarded from timing (CUDA kernels compile/caches fill)
+
+compute:
+  gpu_type: "T4"            # overwritten at runtime by torch.cuda.get_device_name()
+  usd_per_hour: 0.35        # Colab Pro T4 ~ $0.35/h equivalent; edit to match your provider
+  attention_slicing: false  # turn on if you hit OOM at 1024x1024 on a 15 GB T4
+  vae_slicing: true
+
+scoring:
+  pick_score: true          # PickScore_v1 human-preference score (replaced ImageReward, see docs/NOTES.md)
+  pickscore_model: yuvalkirstain/PickScore_v1
+  pickscore_processor: laion/CLIP-ViT-H-14-laion2B-s32B-b79K
+  hpsv2: false              # heavy download (~2 GB); turn on if you have the disk
+  clip_model: openai/clip-vit-large-patch14
+  ocr_engine: easyocr       # or "tesseract"
+  counter: owlv2            # "owlv2" = open-vocabulary detector; "manual" = fill results/manual_counts.csv
+  owlv2_model: google/owlv2-base-patch16-ensemble
+  owlv2_threshold: 0.3
+
+decider:
+  provider: typesafe        # "typesafe" (api.typesafe.ai), "aimlapi", or "heuristic" (offline keyword rules)
+  model: jev-latest
+  # api key comes from the environment: TYPESAFE_API_KEY (or AIMLAPI_KEY)
+  train_fraction: 0.7
+  split_seed: 0
+
+paths:
+  results_csv: results/results.csv
+  images_dir: results/images
+  plots_dir: results/plots

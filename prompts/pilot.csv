@@ -1,0 +1,61 @@
+id,group,prompt,expected
+comp_01,composition,"three red cups to the left of a blue plate on a wooden table, photo","count=3;object=red cup;relation=cups left of plate"
+comp_02,composition,"two yellow bananas lying on top of a closed green book, photo","count=2;object=banana;relation=bananas on top of book"
+comp_03,composition,"four white chairs around a round black table in an empty room","count=4;object=white chair"
+comp_04,composition,"one orange cat sitting on the floor below a window, photo","count=1;object=cat;relation=cat below window"
+comp_05,composition,"five blue balloons tied to a red bicycle, outdoors","count=5;object=blue balloon"
+comp_06,composition,"two brown dogs and one gray cat sitting on a sofa","count=2;object=dog;also=1 gray cat"
+comp_07,composition,"three green apples in a row, each on its own white saucer","count=3;object=green apple"
+comp_08,composition,"a purple umbrella standing to the right of two black suitcases","count=2;object=black suitcase;relation=umbrella right of suitcases"
+comp_09,composition,"six brown eggs in an open cardboard carton next to a blue bowl","count=6;object=egg"
+comp_10,composition,"one red fire hydrant between two trees on a sidewalk","count=1;object=fire hydrant;relation=hydrant between trees"
+text_01,text,"a storefront sign that says ""OPEN 24 HOURS"", photo","text=OPEN 24 HOURS"
+text_02,text,"a chalkboard cafe menu with the words ""FRESH SOUP"" written in chalk","text=FRESH SOUP"
+text_03,text,"a glowing neon sign reading ""HELLO"" on a dark brick wall","text=HELLO"
+text_04,text,"a wooden road sign that says ""BEACH 2 KM"" by a dirt path","text=BEACH 2 KM"
+text_05,text,"a birthday cake with ""HAPPY 30"" written in icing on top","text=HAPPY 30"
+text_06,text,"a white t-shirt with the word ""COFFEE"" printed in black letters, product photo","text=COFFEE"
+text_07,text,"a hardcover book cover with the title ""THE LONG NIGHT""","text=THE LONG NIGHT"
+text_08,text,"a shop window poster that says ""SALE TODAY"" in big red letters","text=SALE TODAY"
+text_09,text,"a green street sign reading ""MAIN ST"" at an intersection","text=MAIN ST"
+text_10,text,"a vintage tin can with a paper label that says ""TOMATO""","text=TOMATO"
+hf_01,hands_faces,"close-up photo of a hand holding a red apple, all five fingers clearly visible",
+hf_02,hands_faces,"two people shaking hands, close-up, natural light, sharp focus on the hands",
+hf_03,hands_faces,"a hand with fingers spread wide against a white wall, studio photo",
+hf_04,hands_faces,"portrait of an elderly fisherman with deep wrinkles, 85mm lens, soft light",
+hf_05,hands_faces,"close-up of a child's face laughing, freckles, soft daylight",
+hf_06,hands_faces,"a pianist's hands on piano keys, close-up, shallow depth of field",
+hf_07,hands_faces,"a woman's hands kneading dough on a floured counter, overhead photo",
+hf_08,hands_faces,"headshot of a young man with glasses, studio lighting, neutral background",
+hf_09,hands_faces,"close-up of a hand writing with a fountain pen on paper",
+hf_10,hands_faces,"a smiling woman's face in profile, golden hour backlight, photo",
+prod_01,product,"a stainless steel espresso machine on a marble counter, product photography",
+prod_02,product,"a pair of white leather sneakers on a plain gray background, studio lighting",
+prod_03,product,"a glass bottle of orange juice with condensation drops, bright kitchen background",
+prod_04,product,"matte black wireless headphones on a wooden desk, product shot",
+prod_05,product,"a bar of handmade lavender soap on a slate tile, soft window light",
+prod_06,product,"a red ceramic coffee mug with steam rising, plain white background",
+prod_07,product,"a wristwatch with a brown leather strap on a dark background, macro detail",
+prod_08,product,"a green glass perfume bottle with a gold cap, luxury product photography",
+prod_09,product,"a stack of three folded cotton towels in pastel colors on a wooden shelf",
+prod_10,product,"a silver laptop open on a clean white desk, side view, soft shadows",
+sty_01,stylized,"a fox in a snowy forest, loose watercolor painting",
+sty_02,stylized,"a city skyline at night, pixel art, 16-bit style",
+sty_03,stylized,"a lighthouse on a cliff in a storm, ukiyo-e woodblock print style",
+sty_04,stylized,"a friendly robot watering plants, flat vector illustration, pastel colors",
+sty_05,stylized,"a knight on horseback, art nouveau poster with an ornate border",
+sty_06,stylized,"a cup of tea on a windowsill, impressionist oil painting",
+sty_07,stylized,"a dragon curled around a mountain peak, ink wash painting",
+sty_08,stylized,"an astronaut riding a bicycle on the moon, 1950s comic book style",
+sty_09,stylized,"a jazz band playing, cubist painting with bold shapes",
+sty_10,stylized,"a sleeping cat, charcoal sketch on textured paper",
+dense_01,dense,"A cozy cabin kitchen at dawn: a copper kettle steams on a cast-iron stove, three ceramic bowls of oatmeal sit on a pine table set with blue checkered napkins, a tabby cat sleeps on a braided rug, and snow is visible through a frosted window with red curtains.",
+dense_02,dense,"A busy night market street: paper lanterns in red and yellow hang over food stalls, a vendor in a white apron flips skewers on a smoking grill, a child holds a pink cotton candy, wet cobblestones reflect the lights, and a bicycle with a wicker basket leans against a lamppost.",
+dense_03,dense,"A cluttered inventor's workshop: brass gears and copper pipes cover a wooden workbench, a half-built mechanical owl with glass eyes sits in a vise, blueprints are pinned to a cork board, a green banker's lamp lights the scene, and rain streaks the tall window.",
+dense_04,dense,"A tide pool at low tide: an orange starfish clings to a barnacle-covered rock, two purple sea urchins sit in clear water, green anemones wave their tentacles, a small crab hides under kelp, and the setting sun turns the wet sand gold.",
+dense_05,dense,"A rooftop garden in a big city: raised wooden beds overflow with tomatoes and basil, a woman in a yellow raincoat waters them with a green can, a striped deck chair sits beside a small glass greenhouse, pigeons perch on the railing, and skyscrapers rise in the hazy background.",
+dense_06,dense,"An old library reading room: tall oak shelves filled with leather-bound books, a spiral iron staircase, a long table with green reading lamps, an open atlas showing a map of the Arctic, a globe on a brass stand, and dust floating in a beam of afternoon light.",
+dense_07,dense,"A desert campsite at night: a canvas tent glows orange from a lantern inside, a camel rests beside a saddle and water skins, a small fire with a copper teapot, a guitar propped against a rock, dunes under a sky full of stars and a thin crescent moon.",
+dense_08,dense,"A children's birthday party in a backyard: a long table with a three-tier purple cake, a bunch of rainbow balloons tied to a chair, a golden retriever wearing a party hat, a piñata shaped like a donkey hanging from an oak tree, and paper streamers in the breeze.",
+dense_09,dense,"A fisherman's harbor in the morning: blue and white wooden boats tied to a stone pier, stacked yellow crab traps, a gray heron standing on a post, nets drying on a wooden rack, a lighthouse with a red top at the end of the breakwater, and fog lifting off the water.",
+dense_10,dense,"A 1970s living room: an orange shag carpet, a brown corduroy sofa with mustard cushions, a wood-paneled television showing static, a lava lamp on a glass side table, a macrame plant hanger with a spider plant, and a framed poster of a sunset over a highway.",
