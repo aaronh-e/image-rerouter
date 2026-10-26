@@ -5,6 +5,7 @@ Nothing in here imports torch, so the tests run on a laptop."""
 from __future__ import annotations
 
 import csv
+import hashlib
 import os
 import subprocess
 from pathlib import Path
@@ -37,18 +38,39 @@ def load_config(path: str | Path | None = None) -> dict:
 
 
 def git_commit() -> str:
-    """Short commit hash, or 'nogit' when run outside a checkout (e.g. a bare Colab copy)."""
+    """Short commit hash; outside a checkout (e.g. a zip uploaded to Colab), a
+    fingerprint of the code instead, so rows from different code never look alike."""
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "--short", "HEAD"], cwd=REPO_ROOT,
             stderr=subprocess.DEVNULL, text=True).strip()
     except Exception:
-        return "nogit"
+        return source_fingerprint()
+
+
+def source_fingerprint() -> str:
+    """'src-' + 10 hex digits of the code and config that produce results. Line
+    endings are normalised so a Windows-made zip and a Linux checkout agree."""
+    h = hashlib.sha1()
+    files = sorted(p for d in ("rerouter", "bench", "app") for p in (REPO_ROOT / d).rglob("*.py"))
+    for p in files + [REPO_ROOT / "config.yaml"]:
+        if p.exists():
+            h.update(p.relative_to(REPO_ROOT).as_posix().encode())
+            h.update(p.read_bytes().replace(b"\r\n", b"\n"))
+    return "src-" + h.hexdigest()[:10]
+
+
+def repo_path(path: str | Path) -> Path:
+    """A relative path that doesn't exist from the current folder is read from the
+    repo root, so `prompts/pilot.csv` works whichever folder a script is run from."""
+    p = Path(path)
+    return p if p.exists() or p.is_absolute() else REPO_ROOT / p
 
 
 # ---------------------------------------------------------------- prompts ----
 
 def read_prompts(path: str | Path) -> list[dict]:
+    path = repo_path(path)
     with open(path, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     required = {"id", "group", "prompt", "expected"}

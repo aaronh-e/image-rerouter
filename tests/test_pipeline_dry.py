@@ -34,7 +34,7 @@ def test_dry_run_resume_score_plot_router(tmp_path):
     assert df["pick_score"].notna().all() and df["clip_score"].notna().all()
     assert df.loc[df.group == "composition", "count_match"].notna().all()
     assert df.loc[df.group == "text", "ocr_match"].notna().all()
-    assert (out.with_suffix(".csv.bak")).exists()
+    assert list(tmp_path.glob("results.*.csv.bak"))
 
     o3 = run("bench/plot.py", "--results", str(out), "--out", str(plots))
     assert (plots / "cost_vs_quality_pick_score.png").exists()

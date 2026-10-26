@@ -51,6 +51,7 @@ scoring:
   counter: owlv2            # "owlv2" = open-vocabulary detector; "manual" = fill results/manual_counts.csv
   owlv2_model: google/owlv2-base-patch16-ensemble
   owlv2_threshold: 0.3
+  owlv2_nms_iou: 0.5        # boxes overlapping more than this count as one object
 
 decider:
   provider: typesafe        # "typesafe" (api.typesafe.ai), "aimlapi", or "heuristic" (offline keyword rules)

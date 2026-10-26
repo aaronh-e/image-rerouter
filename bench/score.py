@@ -20,6 +20,7 @@ no model dependencies and are unit-tested in tests/.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import re
 import shutil
 import sys
@@ -71,6 +72,23 @@ def text_match(ocr_lines: list[str], expected: str) -> tuple[int, float]:
 
 def count_match(detected: int, expected: int) -> int:
     return int(detected == expected)
+
+
+def nms_count(boxes: list, scores: list, iou: float) -> int:
+    """Objects left after non-maximum suppression. OWLv2's post_process_object_detection
+    does no NMS, so one cup can come back as several overlapping boxes and inflate the
+    count. Greedy: keep the best box, drop boxes overlapping it by more than `iou`."""
+    def overlap(a, b):
+        ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+        iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+        inter = ix * iy
+        union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+        return inter / union if union > 0 else 0.0
+    kept = []
+    for i in sorted(range(len(boxes)), key=lambda i: -scores[i]):
+        if all(overlap(boxes[i], boxes[k]) <= iou for k in kept):
+            kept.append(i)
+    return len(kept)
 
 
 # --------------------------------------------------------------- scorers ----
@@ -211,7 +229,7 @@ class Scorers:
             side = max(img.size)
             res = proc.post_process_object_detection(out, threshold=self.cfg["scoring"]["owlv2_threshold"],
                                                      target_sizes=torch.tensor([[side, side]]).to(dev))[0]
-            det = int(len(res["scores"]))
+            det = nms_count(res["boxes"].tolist(), res["scores"].tolist(), self.cfg["scoring"].get("owlv2_nms_iou", 0.5))
             return count_match(det, expected), det
         except Exception as e:
             self.disabled["count"] = str(e); return None, None
@@ -290,7 +308,7 @@ def main(argv=None):
     # attach `expected` from the prompt file(s); full.csv is a superset of pilot
     exp_lookup = {}
     for pf in {args.prompts, "prompts/pilot.csv", "prompts/full.csv"}:
-        if Path(pf).exists():
+        if utils.repo_path(pf).exists():
             for p in utils.read_prompts(pf):
                 exp_lookup.setdefault(p["id"], utils.parse_expected(p["expected"]))
 
@@ -298,8 +316,9 @@ def main(argv=None):
     if args.manual:
         df = merge_manual(df, args.manual)
 
-    # never lose data: keep a backup of the previous file before rewriting in place
-    shutil.copy(results, results.with_suffix(".csv.bak"))
+    # never lose data: a new timestamped backup every run, so two bad runs can't erase the original
+    bak = results.with_name(f"{results.stem}.{dt.datetime.now():%Y%m%d_%H%M%S_%f}.csv.bak")
+    shutil.copy(results, bak)
     df.drop(columns=[c for c in df.columns if c.startswith("Unnamed")], errors="ignore").to_csv(results, index=False)
 
     print("\nSummary")
@@ -307,7 +326,7 @@ def main(argv=None):
     for c in ("pick_score", "hpsv2", "clip_score", "ocr_match", "count_match"):
         if c in ok and ok[c].notna().any():
             print(f"  {c:13s} filled for {ok[c].notna().sum():4d} rows, mean {pd.to_numeric(ok[c], errors='coerce').mean():.3f}")
-    print(f"  wrote {results} (backup at {results.with_suffix('.csv.bak')})")
+    print(f"  wrote {results} (backup at {bak})")
     print("  next: python bench/plot.py")
 
 
