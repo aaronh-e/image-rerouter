@@ -18,6 +18,7 @@ import argparse
 import copy
 import csv
 import datetime as dt
+import os
 import sys
 import time
 from pathlib import Path
@@ -110,17 +111,22 @@ def scorer_note() -> str:
     return "".join(f"\n\n**{k} unavailable:** `{v[:200]}`" for k, v in off.items())
 
 
+def ints(steps, seed):
+    if seed is None or steps is None:
+        raise gr.Error("Seed and total steps need a number.")
+    return int(steps), int(seed)
+
+
 def cfg_for(size: int, guidance: float) -> dict:
     cfg = copy.deepcopy(BASE_CFG)
     cfg["generation"]["width"] = cfg["generation"]["height"] = int(size)
     cfg["generation"]["guidance_scale"] = float(guidance)
-    cfg["compute"]["attention_slicing"] = True
     return cfg
 
 
 def save(image, prompt, seed, direction, switch, steps, res):
     OUT.mkdir(parents=True, exist_ok=True)
-    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]   # ms: same-second runs don't overwrite
     name = f"{stamp}_{direction}_sw{switch:.2f}_st{steps}_s{seed}.png"
     image.save(OUT / name)
     new = not (OUT / "log.csv").exists()
@@ -141,7 +147,7 @@ def run_single(prompt, seed, steps, size, guidance, methods, switch,
     if not methods:
         raise gr.Error("Tick at least one method.")
     cfg = cfg_for(size, guidance)
-    steps, seed = int(steps), int(seed)
+    steps, seed = ints(steps, seed)
     bank = get_bank(progress)
     # always run in the METHODS order, whatever order the boxes were ticked in
     jobs = [(m, d, float(switch) if d in ("s2l", "l2s") else 0.0) for m, d in METHODS.items() if m in methods]
@@ -181,7 +187,7 @@ def run_sweep(prompt, seed, steps, size, guidance, fractions, both,
     if any(not 0 <= f <= 1 for f in fr):
         raise gr.Error("Switch points must be between 0 and 1.")
     cfg = cfg_for(size, guidance)
-    steps, seed = int(steps), int(seed)
+    steps, seed = ints(steps, seed)
     bank = get_bank(progress)
     jobs = [("large", 0.0), ("small", 0.0)]
     for d in (("s2l", "l2s") if both else ("s2l",)):
@@ -253,7 +259,8 @@ def build():
             status = gr.Markdown()
             for c in (method, switch, steps):
                 c.change(explain, [method, switch, steps], note)
-            go.click(run_single, [prompt, seed, steps, size, guidance, method, switch, *checks], [gallery, table, status])
+            go.click(run_single, [prompt, seed, steps, size, guidance, method, switch, *checks], [gallery, table, status],
+                      concurrency_id="gpu", concurrency_limit=1)
 
         with gr.Tab("Sweep"):
             gr.Markdown("One prompt across many switch points. Images are shown in the order they ran; the table gives the cost of each.")
@@ -265,7 +272,8 @@ def build():
             table2 = gr.Dataframe(headers=["setting", "plan", "GPU-seconds", "$/1000 images", "vs large", *SCORE_HEADERS],
                                   label="Cost and quality", interactive=False)
             status2 = gr.Markdown()
-            go2.click(run_sweep, [prompt, seed, steps, size, guidance, fractions, both, *checks], [gallery2, table2, status2])
+            go2.click(run_sweep, [prompt, seed, steps, size, guidance, fractions, both, *checks], [gallery2, table2, status2],
+                      concurrency_id="gpu", concurrency_limit=1)
 
         with gr.Tab("Help"):
             gr.Markdown("""
@@ -295,13 +303,27 @@ Every image and its timing is appended to `results/app/log.csv`; quality scores 
     return demo
 
 
+def parse_auth(value):
+    """'user:password' -> (user, password); blank -> no login."""
+    if not value:
+        return None
+    if ":" not in value:
+        raise SystemExit("--auth must look like user:password")
+    user, pw = value.split(":", 1)
+    return user, pw
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--share", action="store_true", help="print a public link (needed on Colab)")
     ap.add_argument("--demo", action="store_true", help="no GPU: fake images and estimated timings")
     ap.add_argument("--device", default="auto", help="auto | cuda | mps | cpu")
     ap.add_argument("--port", type=int, default=7860)
+    ap.add_argument("--auth", default=os.environ.get("RR_AUTH", ""),
+                    help="user:password to require a login (recommended with --share); or set RR_AUTH")
     a = ap.parse_args()
     STATE["demo"], STATE["device"] = a.demo, a.device
     print("DEMO MODE: fake images." if a.demo else "Models load on the first Generate click.")
-    build().launch(share=a.share, server_port=a.port, show_error=True, css=CSS)
+    if a.share and not a.auth:
+        print("WARNING: the public link has no login; anyone with it can use this GPU. Add --auth user:password.")
+    build().launch(share=a.share, server_port=a.port, show_error=True, css=CSS, auth=parse_auth(a.auth))

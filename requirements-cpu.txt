@@ -9,3 +9,4 @@ tabulate                # pandas.to_markdown needs it (plot.py, decider_eval.py)
 huggingface_hub>=0.24
 requests
 pytest
+gradio>=6.0              # the website (app/app.py --demo) and its tests

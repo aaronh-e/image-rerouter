@@ -20,4 +20,4 @@ easyocr                 # OCR for the text group
 requests
 # Tests
 pytest
-gradio>=4.44
+gradio>=6.0              # launch(css=...) is Gradio 6 API

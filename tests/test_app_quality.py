@@ -90,3 +90,40 @@ def test_failed_scorer_says_unavailable_not_blank(tmp_path):
                                    True, "OPEN", "cup", 3, progress=no_progress)
     assert rows[0][7:] == ["unavailable", 28.5, "unavailable", "3/3"]
     assert "pick_score" in note and "ocr" in note
+
+
+def test_generate_and_sweep_share_one_gpu_queue(tmp_path):
+    # Both buttons swap UNets on the one shared pipeline, so they must never run at the same time.
+    app = load_app(tmp_path)
+    fns = {f.name: f for f in app.build().fns.values()}
+    a, b = fns["run_single"], fns["run_sweep"]
+    assert a.concurrency_id == b.concurrency_id
+    assert a.concurrency_limit == b.concurrency_limit == 1
+
+
+def test_blank_seed_is_a_clear_error(tmp_path):
+    import gradio as gr
+    import pytest
+    app = load_app(tmp_path)
+    with pytest.raises(gr.Error):
+        app.run_single("an apple", None, 30, 1024, 7.5, ["Large model only"], 0.0, False, "", "", 0, progress=no_progress)
+    with pytest.raises(gr.Error):
+        app.run_sweep("an apple", None, 30, 1024, 7.5, "0.4", True, False, "", "", 0, progress=no_progress)
+
+
+def test_file_names_never_collide(tmp_path):
+    app = load_app(tmp_path)
+    for _ in range(2):   # same settings twice within the same second
+        app.run_single("an apple", 42, 30, 1024, 7.5, ["Large model only"], 0.0, False, "", "", 0, progress=no_progress)
+    assert len(list(tmp_path.glob("*.png"))) == 2
+
+
+def test_auth_parsing():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("rerouter_app2", ROOT / "app" / "app.py")
+    app = importlib.util.module_from_spec(spec); spec.loader.exec_module(app)
+    assert app.parse_auth("") is None and app.parse_auth(None) is None
+    assert app.parse_auth("aaron:s3cret:x") == ("aaron", "s3cret:x")
+    import pytest
+    with pytest.raises(SystemExit):
+        app.parse_auth("no-colon")
