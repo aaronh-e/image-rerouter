@@ -114,6 +114,9 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     cfg = utils.load_config(args.config)
+    if cfg["handoff"].get("impl", "swap") != "swap":
+        # impl is not part of the run key, so rows from two implementations would mix silently.
+        sys.exit("bench/run.py needs handoff.impl: swap in config.yaml (twopipe is a Level 1 comparison only)")
     args.seeds = args.seeds or cfg["seeds"]
     prompts = utils.read_prompts(args.prompts)
     if args.groups:

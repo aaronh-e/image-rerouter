@@ -35,8 +35,12 @@ files on the Hub (full numbers in `compat_report.md`).
 `pipe.unet` inside `callback_on_step_end`. The latent and the scheduler state never leave
 the loop, so step 12 of the second model sees exactly what step 12 of a normal run would.
 The two-pipeline route (`denoising_end` / `denoising_start`) re-encodes the prompt and
-rounds the handoff to a timestep; it is kept as `impl: twopipe` for pairs with different
-encoders, and the Level 1 notebook checks the two agree (PSNR).
+cuts the schedule by timestep, not step count: passing k/steps gave model A one step too
+few (11 of 30 at 0.4 with SDXL's "leading" spacing), so `handoff_fraction()` now cuts at
+model A's last timestep and both routes split at the same step. It is kept as
+`impl: twopipe` for pairs with different encoders, and the Level 1 notebook checks the two
+agree (PSNR). bench/run.py refuses twopipe: `impl` is not in the run key, so mixing would
+go unnoticed.
 
 **switch_fraction counts steps for the first model.** With this definition the endpoints
 of each sweep equal the controls (`s2l@0` = large alone, `s2l@1` = small alone). Any

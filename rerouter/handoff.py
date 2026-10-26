@@ -126,9 +126,20 @@ def _generate_swap(bank, segs, common, g):
     return out.images[0], secs, peak
 
 
+def handoff_fraction(timesteps, k: int, num_train_timesteps: int) -> float:
+    """The denoising_end/denoising_start value that gives model A exactly the first
+    k steps. diffusers keeps steps with t >= round(T - f*T) for model A, and k/steps
+    is NOT that: with SDXL's "leading" spacing, 12/30 = 0.4 cuts at t=600 and model A
+    runs 11 steps (958, 925, ..., 628), not 12. Cutting at model A's last timestep
+    t[k-1] instead gives A steps 0..k-1 and B steps k..N-1, same as the swap path."""
+    return 1.0 - float(timesteps[k - 1]) / num_train_timesteps
+
+
 def _generate_twopipe(bank, segs, common, g, steps):
     """Model A to a latent, model B from that latent (denoising_end / denoising_start)."""
-    f = segs[0].end / steps
+    sched = type(bank.pipe.scheduler).from_config(bank.pipe.scheduler.config)   # a copy: leave the pipe's state alone
+    sched.set_timesteps(steps)
+    f = handoff_fraction(sched.timesteps, segs[0].end, sched.config.num_train_timesteps)
     img2img = bank.get_img2img()
     t0 = _timer_start(bank.device)
     bank.set_unet(segs[0].model)
@@ -149,4 +160,5 @@ def warmup(bank, cfg: dict, n: int = 1) -> None:
     call; the fairness rule says never time that run."""
     for _ in range(n):
         for tier in bank.unets:
-            generate(bank, "a photo of a cat", 0, tier, 0.0, 4, cfg)
+            # explicit segments: schedule.plan() has no direction for a third tier like "tiny"
+            generate(bank, "a photo of a cat", 0, tier, 0.0, 4, cfg, segments=[Segment(tier, 0, 4)])
