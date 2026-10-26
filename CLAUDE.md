@@ -7,7 +7,7 @@ committed. Nothing has run on a GPU yet.
 ## State of play
 - Level 1's VAE question is answered analytically (docs/compat_report.md): SSD-1B ships
   the sdxl-vae-fp16-fix VAE, so SDXL and SSD-1B share one latent space.
-- 27 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
+- 47 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
 - The website (app/app.py) has optional quality checks that reuse bench/score.py's Scorers
   (PickScore, CLIPScore, OCR, count) plus a $/1000 column; scores go to results/app/scores.csv.
 - PickScore replaced ImageReward (broken on transformers 5); column is `pick_score`. Why: docs/NOTES.md.
