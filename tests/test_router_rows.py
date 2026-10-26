@@ -37,10 +37,11 @@ def test_decider_eval_ignores_router_rows(tmp_path):
 
 def test_router_plots_as_one_point():
     from bench.plot import aggregate
-    rows = [dict(family="router", setting="router", method="router", direction=d, switch_fraction=f, steps=30,
-                 gpu_seconds=c, pick_score=q) for d, f, c, q in [("s2l", 0.4, 10, 20), ("l2s", 0.6, 12, 21), ("large", 0.0, 20, 22)]]
-    rows.append(dict(family="control", setting="large@30", method="control", direction="large", switch_fraction=0.0,
-                     steps=30, gpu_seconds=25, pick_score=22.5))
+    rows = [dict(prompt_id=f"p{i}", family="router", setting="router", method="router", direction=d, switch_fraction=f,
+                 steps=30, gpu_seconds=c, pick_score=q)
+            for i, (d, f, c, q) in enumerate([("s2l", 0.4, 10, 20), ("l2s", 0.6, 12, 21), ("large", 0.0, 20, 22)])]
+    rows.append(dict(prompt_id="p0", family="control", setting="large@30", method="control", direction="large",
+                     switch_fraction=0.0, steps=30, gpu_seconds=25, pick_score=22.5))
     agg = aggregate(pd.DataFrame(rows), "pick_score")
     r = agg[agg.family == "router"]
     assert len(r) == 1 and r.iloc[0].n == 3 and r.iloc[0].cost == 14 and r.iloc[0].q == 21

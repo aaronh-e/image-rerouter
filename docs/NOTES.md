@@ -61,8 +61,11 @@ under each control-3 budget (±5%); (b) the matched-cost table pairs each handof
 with the nearest large-only control within ±15% and reports the paired delta. If no
 control is within 15%, the cell says so rather than interpolating.
 
-**Statistics.** Pair by (prompt, seed) to remove prompt difficulty, report mean delta with
-a 2000-sample bootstrap 95% CI and an exact two-sided sign test. On the pilot, each
+**Statistics.** Pair by (prompt, seed) to remove prompt difficulty, then average each
+prompt's seeds: the two seeds of a prompt are correlated, so the unit is the prompt. Report
+mean delta with a 2000-sample bootstrap 95% CI over prompts and an exact two-sided sign test
+on per-prompt deltas; chart error bars are the SEM of per-prompt means. "Beats the matched
+control" needs that CI entirely above 0, and the success reference is large@config steps. On the pilot, each
 setting has 120 images; a mean PickScore delta of ~0.1 is roughly the smallest thing
 you can hope to see. On the full set (400 images per setting) halve that. (This was worked
 out for ImageReward; re-check it against the pilot's PickScore spread once real data exists.

@@ -66,8 +66,10 @@ def aggregate(df: pd.DataFrame, metric: str) -> pd.DataFrame:
     rt = d["family"] == "router"
     d.loc[rt, "direction"] = "router"
     d.loc[rt, ["switch_fraction", "steps"]] = np.nan
-    g = d.groupby(["family", "setting", "method", "direction", "switch_fraction", "steps"], dropna=False)
-    agg = g.agg(cost=("gpu_seconds", "mean"), q=(metric, "mean"), q_sem=(metric, "sem"), n=(metric, "size")).reset_index()
+    keys = ["family", "setting", "method", "direction", "switch_fraction", "steps"]
+    # a prompt's seeds are correlated, so the unit for the error bar is the prompt
+    pp = d.groupby(keys + ["prompt_id"], dropna=False).agg(cost=("gpu_seconds", "mean"), q=(metric, "mean"), n=(metric, "size"))
+    agg = pp.groupby(level=keys, dropna=False).agg(cost=("cost", "mean"), q=("q", "mean"), q_sem=("q", "sem"), n=("n", "sum")).reset_index()
     return agg.sort_values("cost")
 
 
@@ -164,18 +166,21 @@ def sign_test_p(wins: int, losses: int) -> float:
 
 
 def paired_delta(df: pd.DataFrame, metric: str, setting_a: str, setting_b: str) -> dict:
-    """Mean (A - B) over images that exist for both settings, with a bootstrap CI
-    and a sign test. Pairing by (prompt_id, seed) removes prompt difficulty."""
+    """Mean (A - B) with a bootstrap CI and a sign test. Pairing by (prompt_id, seed)
+    removes prompt difficulty; the seeds of one prompt are then averaged, because they
+    are correlated, so the CI resamples prompts and the sign test counts prompts.
+    n = prompts, n_images = image pairs."""
     a = df[df.setting == setting_a].set_index(["prompt_id", "seed"])[metric]
     b = df[df.setting == setting_b].set_index(["prompt_id", "seed"])[metric]
     j = pd.concat([a.rename("a"), b.rename("b")], axis=1, join="inner").dropna()
     if j.empty:
-        return dict(n=0, mean_delta=np.nan, ci_lo=np.nan, ci_hi=np.nan, p_sign=np.nan)
-    d = (j.a - j.b).to_numpy()
+        return dict(n=0, n_images=0, mean_delta=np.nan, ci_lo=np.nan, ci_hi=np.nan, p_sign=np.nan, wins=0, losses=0)
+    d_img = j.a - j.b
+    d = d_img.groupby(level="prompt_id").mean().to_numpy()
     rng = np.random.default_rng(0)
     boots = rng.choice(d, size=(2000, len(d)), replace=True).mean(axis=1)
     wins, losses = int((d > 0).sum()), int((d < 0).sum())
-    return dict(n=len(d), mean_delta=float(d.mean()), ci_lo=float(np.percentile(boots, 2.5)),
+    return dict(n=len(d), n_images=len(d_img), mean_delta=float(d.mean()), ci_lo=float(np.percentile(boots, 2.5)),
                 ci_hi=float(np.percentile(boots, 97.5)), p_sign=sign_test_p(wins, losses), wins=wins, losses=losses)
 
 
@@ -242,23 +247,25 @@ def order_head_to_head(df: pd.DataFrame, metric: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def success_report(df: pd.DataFrame, metric: str, matched: pd.DataFrame, min_saving: float = 0.30) -> str:
+def success_report(df: pd.DataFrame, metric: str, matched: pd.DataFrame, ref_steps: int, min_saving: float = 0.30) -> str:
+    """ref_steps is config generation.steps: the reference must not drift to whatever
+    the largest step count in the data happens to be."""
     agg = aggregate(df, metric)
-    ref = agg[agg.setting == f"large@{int(df.steps.max())}"]
+    ref = agg[agg.setting == f"large@{int(ref_steps)}"]
     if ref.empty:
         return "No full-step large control found; run the controls first.\n"
     ref = ref.iloc[0]
     lines = [f"# Success check ({metric})", "", f"Reference: {ref.setting} at {ref.cost:.2f} GPU-s, {metric} = {ref.q:.3f}", "",
-             f"Criterion: >= {int(min_saving * 100)}% fewer GPU-seconds than the reference, quality delta vs reference whose 95% CI includes 0 or is positive, and beats the matched-cost large-only control.", "",
+             f"Criterion: >= {int(min_saving * 100)}% fewer GPU-seconds than the reference, quality delta vs reference whose 95% CI includes 0 or is positive, and beats the matched-cost large-only control (95% CI of the delta entirely above 0). CIs resample prompts.", "",
              "| setting | GPU-s | saving | delta vs ref [95% CI] | vs matched control | passes? |", "|---|---|---|---|---|---|"]
     for _, r in agg[agg.family.isin(["s2l", "l2s", "router"])].iterrows():
         saving = 1 - r.cost / ref.cost
         d = paired_delta(df, metric, r.setting, ref.setting)
         m = matched[matched.setting == r.setting]
-        beats = (not m.empty) and pd.notna(m.iloc[0].get("mean_delta", np.nan)) and m.iloc[0]["mean_delta"] > 0
+        beats = (not m.empty) and pd.notna(m.iloc[0].get("ci_lo", np.nan)) and m.iloc[0]["ci_lo"] > 0
         no_loss = pd.notna(d["ci_hi"]) and d["ci_hi"] >= 0
         ok = saving >= min_saving and no_loss and beats
-        mtxt = f"{m.iloc[0]['mean_delta']:+.3f} vs {m.iloc[0]['control']}" if not m.empty and pd.notna(m.iloc[0].get("mean_delta", np.nan)) else "n/a"
+        mtxt = f"{m.iloc[0]['mean_delta']:+.3f} [{m.iloc[0]['ci_lo']:+.3f}, {m.iloc[0]['ci_hi']:+.3f}] vs {m.iloc[0]['control']}" if not m.empty and pd.notna(m.iloc[0].get("mean_delta", np.nan)) else "n/a"
         lines.append(f"| {r.setting} | {r.cost:.2f} | {saving:+.0%} | {d['mean_delta']:+.3f} [{d['ci_lo']:+.3f}, {d['ci_hi']:+.3f}] | {mtxt} | {'YES' if ok else 'no'} |")
     return "\n".join(lines) + "\n"
 
@@ -289,7 +296,7 @@ def main(argv=None):
     matched.to_csv(out_dir / f"matched_cost_{args.metric}.csv", index=False)
     h2h = order_head_to_head(df, args.metric)
     h2h.to_csv(out_dir / f"order_head_to_head_{args.metric}.csv", index=False)
-    report = success_report(df, args.metric, matched)
+    report = success_report(df, args.metric, matched, cfg["generation"]["steps"])
     (out_dir / f"success_{args.metric}.md").write_text(report)
 
     print(agg[["setting", "cost", "q", "q_sem", "n"]].to_string(index=False, float_format=lambda x: f"{x:.3f}"))
