@@ -139,6 +139,8 @@ def main(argv=None):
     prompts = utils.read_prompts(args.prompts)
     df = load_results(args.results or cfg["paths"]["results_csv"])
     df = df[df.prompt_id.isin({p["id"] for p in prompts})]
+    # rows from `run.py --method router` replay an earlier policy; learning from them is circular
+    df = df[df.method != "router"]
     ref_setting = f"large@{cfg['generation']['steps']}"
 
     pp = per_prompt_table(df, args.metric)

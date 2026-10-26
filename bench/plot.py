@@ -60,8 +60,12 @@ def setting_label(r) -> str:
 
 
 def aggregate(df: pd.DataFrame, metric: str) -> pd.DataFrame:
-    """One row per setting: mean cost, mean quality, SEM, n images."""
-    d = df.dropna(subset=[metric, "gpu_seconds"])
+    """One row per setting: mean cost, mean quality, SEM, n images. The router is one
+    setting even though it picks a different route per prompt."""
+    d = df.dropna(subset=[metric, "gpu_seconds"]).copy()
+    rt = d["family"] == "router"
+    d.loc[rt, "direction"] = "router"
+    d.loc[rt, ["switch_fraction", "steps"]] = np.nan
     g = d.groupby(["family", "setting", "method", "direction", "switch_fraction", "steps"], dropna=False)
     agg = g.agg(cost=("gpu_seconds", "mean"), q=(metric, "mean"), q_sem=(metric, "sem"), n=(metric, "size")).reset_index()
     return agg.sort_values("cost")
