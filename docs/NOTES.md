@@ -43,14 +43,20 @@ agree (PSNR). bench/run.py refuses twopipe: `impl` is not in the run key, so mix
 go unnoticed.
 
 **switch_fraction counts steps for the first model.** With this definition the endpoints
-of each sweep equal the controls (`s2l@0` = large alone, `s2l@1` = small alone). Any
-mismatch between `s2l@0.0` and `large@30` in results.csv means the sweep code is wrong.
+of each sweep equal the controls (`s2l@0` = large alone, `s2l@1` = small alone).
+`schedule.plan()` collapses those endpoints to the controls' exact plan (unit-tested in
+`tests/test_schedule.py::test_endpoints_collapse_to_controls`), so the sweep skips 0 and 1
+and the controls stand in for them.
 
 **Cost is linear in steps, so `s2l@f` and `l2s@(1-f)` cost the same.** This is the
 cleanest head-to-head of T-Stitch order vs Hybrid SD order: same models, same steps per
 model, same prompts, same seeds, only the order differs. `plot.py` pairs them by image
 and runs a bootstrap CI plus an exact sign test. If one order wins on composition and the
 other on text, that's the Level 3 story, and it's the signal Level 4's router needs.
+
+**`peak_mem_gb` includes both UNets for every method,** even "small alone", because both
+stay loaded so a handoff costs nothing. It measures this setup, not the memory of a
+deployment that only ever runs the small model; footnote it if you report it.
 
 **Same guidance scale for both models (7.5).** Segmind recommends 9.0 for SSD-1B alone.
 The fairness rule wins, but note it as a possible handicap for the small model. A cheap

@@ -23,9 +23,14 @@ if IN_COLAB and not os.path.exists("image-rerouter"):
         !git clone -q $REPO_URL
     else:
         from google.colab import files
+        import glob, shutil
         print("Pick the image-rerouter zip (any name, e.g. image-rerouter_2026-10-26.zip) in the file dialog below.")
         ZIP = next(iter(files.upload()))
-        !unzip -q -o "$ZIP" && rm "$ZIP"
+        !rm -rf /content/_unzip && unzip -q -o "$ZIP" -d /content/_unzip && rm "$ZIP"
+        # the code is wherever config.yaml sits next to rerouter/, whatever the zip's folder is called
+        src = next(os.path.dirname(c) for c in glob.glob("/content/_unzip/**/config.yaml", recursive=True)
+                   if os.path.isdir(os.path.join(os.path.dirname(c), "rerouter")))
+        shutil.move(src, "/content/image-rerouter")
 if IN_COLAB:
     %cd image-rerouter
     !pip install -q -r requirements.txt
@@ -169,7 +174,9 @@ Vega is a smaller distillation that also uses SDXL's VAE. On a 15 GB T4 we free 
 ("code", """RUN_OPTIONAL = True   # set False to skip the heavy downloads in 6a-6c
 if RUN_OPTIONAL:
     import gc
-    del bank.unets["large"]; gc.collect(); torch.cuda.empty_cache()
+    # drop EVERY reference to the SDXL UNet (the dict, the pipeline, the restore slot) or it stays in GPU memory
+    del bank.unets["large"]; bank.pipe.unet = bank._original_unet = bank.unets["small"]
+    gc.collect(); torch.cuda.empty_cache()
     from diffusers import UNet2DConditionModel
     bank.unets["tiny"] = UNet2DConditionModel.from_pretrained(cfg["models"]["tiny"], subfolder="unet",
                                                                torch_dtype=torch.float16, variant="fp16").to("cuda")
@@ -260,20 +267,23 @@ if IN_COLAB:
             !git clone -q $REPO_URL $WORK
         else:
             from google.colab import files
+            import glob, shutil
             print("Pick the image-rerouter zip (any name). This only happens once; after that it lives on your Drive.")
             ZIP = next(iter(files.upload()))
-            !unzip -q -o "$ZIP" -d /content/drive/MyDrive && rm "$ZIP"
+            !rm -rf /content/_unzip && unzip -q -o "$ZIP" -d /content/_unzip && rm "$ZIP"
+            src = next(os.path.dirname(c) for c in glob.glob("/content/_unzip/**/config.yaml", recursive=True)
+                       if os.path.isdir(os.path.join(os.path.dirname(c), "rerouter")))
+            shutil.move(src, WORK)
     %cd $WORK
     if REPO_URL: !git pull -q
+    else: print(f"Using the code already in {WORK} (your first upload). To update it, set REPO_URL, or delete that folder and re-run.")
     !pip install -q -r requirements.txt
     !pip uninstall -q -y torchao   # Colab's preinstalled torchao is too old for new diffusers (FqnToConfig import error); unused here
 import torch; print(torch.cuda.get_device_name(0))"""),
-("code", """# Record the GPU and its price so GPU-seconds convert to dollars (edit the price for your provider).
+("code", """# GPU-seconds convert to dollars with compute.usd_per_hour in config.yaml: edit it there for your provider.
+# (Rewriting config.yaml from here would strip its comments.) The GPU name is logged in every row automatically.
 import yaml
-cfg = yaml.safe_load(open("config.yaml"))
-cfg["compute"]["gpu_type"] = torch.cuda.get_device_name(0)
-cfg["compute"]["usd_per_hour"] = 0.35
-yaml.safe_dump(cfg, open("config.yaml", "w"), sort_keys=False)
+print("GPU:", torch.cuda.get_device_name(0), "| price used for $/1000 images:", yaml.safe_load(open("config.yaml"))["compute"]["usd_per_hour"], "$/h")
 # Hugging Face token (optional but avoids throttled downloads): Colab > Secrets > HF_TOKEN
 try:
     from google.colab import userdata; os.environ["HF_TOKEN"] = userdata.get("HF_TOKEN")
@@ -357,7 +367,9 @@ Runs `app/app.py` on a Colab GPU and gives you a public link. Open the link in a
 
 Setup: Runtime > Change runtime type > **T4 GPU** > Save. Then Runtime > Run all. The first Generate click loads the models (~10 GB download, 3-5 minutes); later clicks take about 20-40 seconds per image on a T4."""),
 ("code", SETUP),
-("code", """!python app/app.py --share"""),
+("code", """APP_PASSWORD = ""   # set one so only people you give it to can use your GPU (user name: guest); blank = no login
+os.environ["RR_AUTH"] = f"guest:{APP_PASSWORD}" if APP_PASSWORD else ""
+!python app/app.py --share"""),
 ]
 
 (ROOT / "notebooks").mkdir(exist_ok=True)
