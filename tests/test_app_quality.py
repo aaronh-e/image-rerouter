@@ -84,6 +84,7 @@ def test_failed_scorer_says_unavailable_not_blank(tmp_path):
         def clip_score(self, path, prompt): return 28.5
         def ocr(self, path, text): return None, None, None
         def count(self, path, obj, n): return 1, 3
+        def park(self): pass
 
     app.STATE["scorers"] = Broken()
     _, rows, note = app.run_single("three cups", 1, 30, 1024, 7.5, ["Large model only"], 0.0,
@@ -127,3 +128,28 @@ def test_auth_parsing():
     import pytest
     with pytest.raises(SystemExit):
         app.parse_auth("no-colon")
+
+
+def test_scoring_runs_after_all_generation_then_parks(tmp_path):
+    # Scorers must never sit on the GPU while an image is being generated (T4 OOM).
+    app = load_app(tmp_path)
+    events = []
+    real_gen = app.gen
+    def gen(*a, **k):
+        events.append("gen"); return real_gen(*a, **k)
+    app.gen = gen
+
+    class Rec:
+        disabled = {}
+        def pick_score(self, p, t): events.append("score"); return 20.0
+        def clip_score(self, p, t): return 30.0
+        def ocr(self, p, t): return 1, 0.0, t
+        def count(self, p, o, n): return 1, n
+        def park(self): events.append("park")
+
+    app.STATE["scorers"] = Rec()
+    app.run_single("an apple", 1, 30, 1024, 7.5, list(app.METHODS), 0.4, True, "", "", 0, progress=no_progress)
+    assert events == ["gen"] * 4 + ["score"] * 4 + ["park"]
+    events.clear()
+    app.run_sweep("an apple", 1, 30, 1024, 7.5, "0.4", True, True, "", "", 0, progress=no_progress)
+    assert events == ["gen"] * 4 + ["score"] * 4 + ["park"]

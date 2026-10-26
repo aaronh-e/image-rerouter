@@ -24,3 +24,17 @@ def test_text_match_substring_and_multiline():
 def test_count_match():
     assert count_match(3, 3) == 1
     assert count_match(2, 3) == 0
+
+
+class _Model:
+    def __init__(self): self.moves = []
+    def to(self, dev): self.moves.append(dev); return self
+
+
+def test_park_moves_every_loaded_scorer_off_the_gpu():
+    from bench.score import Scorers
+    sc = Scorers({"scoring": {}})
+    sc._pick, sc._clip, sc._det = (_Model(), None, None), (_Model(), None), (_Model(), None)
+    sc.park()
+    assert [m[0].moves for m in (sc._pick, sc._clip, sc._det)] == [["cpu"]] * 3
+    Scorers({"scoring": {}}).park()          # nothing loaded: no-op, no error

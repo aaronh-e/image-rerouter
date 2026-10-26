@@ -83,6 +83,26 @@ class Scorers:
         self._pick = self._hps = self._clip = self._ocr = self._det = None
         self.disabled: dict[str, str] = {}
 
+    @staticmethod
+    def _device() -> str:
+        import torch
+        return "cuda" if torch.cuda.is_available() else "cpu"
+
+    def park(self) -> None:
+        """Move the loaded torch scorers to CPU and release their GPU memory. The
+        website calls this after each job so ~4 GB of scorers never sit on a 15 GB T4
+        while SDXL generates; each scorer moves itself back on its next call.
+        (easyocr's reader stays put: it is ~0.1 GB and has no .to().)"""
+        for loaded in (self._pick, self._clip, self._det):
+            if loaded is not None:
+                loaded[0].to("cpu")
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except ImportError:
+            pass
+
     # -- PickScore
     def pick_score(self, path: str, prompt: str):
         """PickScore_v1: a CLIP-H model fine-tuned on Pick-a-Pic human preferences.
@@ -97,11 +117,12 @@ class Scorers:
             from PIL import Image
             if self._pick is None:
                 from transformers import AutoModel, AutoProcessor
-                dev = "cuda" if torch.cuda.is_available() else "cpu"
-                dtype = torch.float16 if dev == "cuda" else torch.float32
-                model = AutoModel.from_pretrained(self.cfg["scoring"]["pickscore_model"], torch_dtype=dtype).to(dev).eval()
-                self._pick = (model, AutoProcessor.from_pretrained(self.cfg["scoring"]["pickscore_processor"]), dev, dtype)
-            model, proc, dev, dtype = self._pick
+                dtype = torch.float16 if self._device() == "cuda" else torch.float32
+                model = AutoModel.from_pretrained(self.cfg["scoring"]["pickscore_model"], torch_dtype=dtype).eval()
+                self._pick = (model, AutoProcessor.from_pretrained(self.cfg["scoring"]["pickscore_processor"]), dtype)
+            model, proc, dtype = self._pick
+            dev = self._device()
+            model.to(dev)   # no-op unless park() moved it to CPU
             inputs = proc(text=[prompt], images=Image.open(path).convert("RGB"), padding=True, truncation=True,
                           max_length=77, return_tensors="pt").to(dev)
             inputs["pixel_values"] = inputs["pixel_values"].to(dtype)
@@ -133,9 +154,10 @@ class Scorers:
             if self._clip is None:
                 from transformers import CLIPModel, CLIPProcessor
                 mid = self.cfg["scoring"]["clip_model"]
-                dev = "cuda" if torch.cuda.is_available() else "cpu"
-                self._clip = (CLIPModel.from_pretrained(mid).to(dev).eval(), CLIPProcessor.from_pretrained(mid), dev)
-            model, proc, dev = self._clip
+                self._clip = (CLIPModel.from_pretrained(mid).eval(), CLIPProcessor.from_pretrained(mid))
+            model, proc = self._clip
+            dev = self._device()
+            model.to(dev)
             inputs = proc(text=[prompt], images=Image.open(path).convert("RGB"), return_tensors="pt",
                           padding=True, truncation=True).to(dev)
             with torch.no_grad():
@@ -177,9 +199,10 @@ class Scorers:
             if self._det is None:
                 from transformers import Owlv2ForObjectDetection, Owlv2Processor
                 mid = self.cfg["scoring"]["owlv2_model"]
-                dev = "cuda" if torch.cuda.is_available() else "cpu"
-                self._det = (Owlv2ForObjectDetection.from_pretrained(mid).to(dev).eval(), Owlv2Processor.from_pretrained(mid), dev)
-            model, proc, dev = self._det
+                self._det = (Owlv2ForObjectDetection.from_pretrained(mid).eval(), Owlv2Processor.from_pretrained(mid))
+            model, proc = self._det
+            dev = self._device()
+            model.to(dev)
             img = Image.open(path).convert("RGB")
             inputs = proc(text=[[f"a photo of a {obj}"]], images=img, return_tensors="pt").to(dev)
             with torch.no_grad():

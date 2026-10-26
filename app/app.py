@@ -106,6 +106,20 @@ def quality(name, prompt, expected_text, count_object, count_n):
     return scores
 
 
+def score_all(names, prompt, expected_text, count_object, count_n, progress, labels):
+    """Score a job's images only after ALL of them are generated, then park the scorers
+    off the GPU, so they never sit beside SDXL during generation (T4 OOM)."""
+    try:
+        out = []
+        for name, label in zip(names, labels):
+            progress(1.0, desc=f"Scoring: {label}")
+            out.append(quality(name, prompt, expected_text, count_object, count_n))
+        return out
+    finally:
+        if STATE["scorers"] is not None:
+            STATE["scorers"].park()
+
+
 def scorer_note() -> str:
     off = (STATE["scorers"].disabled if STATE["scorers"] else {})
     return "".join(f"\n\n**{k} unavailable:** `{v[:200]}`" for k, v in off.items())
@@ -151,16 +165,15 @@ def run_single(prompt, seed, steps, size, guidance, methods, switch,
     bank = get_bank(progress)
     # always run in the METHODS order, whatever order the boxes were ticked in
     jobs = [(m, d, float(switch) if d in ("s2l", "l2s") else 0.0) for m, d in METHODS.items() if m in methods]
-    gallery, rows, scores = [], [], []
+    gallery, rows = [], []
     for i, (label, d, f) in enumerate(jobs):
         progress((i + 1) / (len(jobs) + 1), desc=f"Generating: {label}")
         res = gen(bank, prompt, seed, d, f, steps, cfg)
         name = save(res.image, prompt, seed, d, f, steps, res)
         gallery.append((res.image, f"{label}  |  {res.gpu_seconds:.1f} s  |  {res.plan}"))
         rows.append([label, res.plan, round(res.gpu_seconds, 2), round(res.peak_mem_gb, 2), usd_per_1000(res.gpu_seconds), name])
-        if score:
-            progress((i + 1) / (len(jobs) + 1), desc=f"Scoring: {label}")
-        scores.append(quality(name, prompt, expected_text, count_object, count_n) if score else [""] * len(SCORE_HEADERS))
+    scores = (score_all([r[5] for r in rows], prompt, expected_text, count_object, count_n, progress, [r[0] for r in rows])
+              if score else [[""] * len(SCORE_HEADERS)] * len(rows))
     base = next((r[2] for r in rows if r[0] == "Large model only"), None)
     if base:
         for r in rows:
@@ -192,15 +205,16 @@ def run_sweep(prompt, seed, steps, size, guidance, fractions, both,
     jobs = [("large", 0.0), ("small", 0.0)]
     for d in (("s2l", "l2s") if both else ("s2l",)):
         jobs += [(d, f) for f in fr if 0 < f < 1]
-    gallery, rows, scores = [], [], []
+    gallery, rows, names = [], [], []
     for i, (d, f) in enumerate(jobs):
         progress((i + 1) / (len(jobs) + 1), desc=f"{d} @ {f:.2f}")
         res = gen(bank, prompt, seed, d, f, steps, cfg)
-        name = save(res.image, prompt, seed, d, f, steps, res)
+        names.append(save(res.image, prompt, seed, d, f, steps, res))
         label = {"large": "large only", "small": "small only"}.get(d, f"{d} @ {f:.2f}")
         gallery.append((res.image, f"{label}  |  {res.gpu_seconds:.1f} s"))
         rows.append([label, res.plan, round(res.gpu_seconds, 2), usd_per_1000(res.gpu_seconds)])
-        scores.append(quality(name, prompt, expected_text, count_object, count_n) if score else [""] * len(SCORE_HEADERS))
+    scores = (score_all(names, prompt, expected_text, count_object, count_n, progress, [r[0] for r in rows])
+              if score else [[""] * len(SCORE_HEADERS)] * len(rows))
     base = rows[0][2]
     for r, s in zip(rows, scores):
         r.append(f"{1 - r[2] / base:+.0%}")

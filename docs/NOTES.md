@@ -81,7 +81,11 @@ transformers 4.x instead breaks current diffusers via huggingface_hub. PickScore
 (Kirstain et al. 2023, Pick-a-Pic) measures the same thing, is a plain CLIP-H checkpoint,
 and loads with stock transformers. Score = `logits_per_image` = logit_scale x cosine,
 identical to the official get_*_features recipe (22.7211 vs 22.7210 on a test sign).
-Loaded fp16 on GPU (~2 GB) so it fits on a T4 beside both UNets. Sanity check on a sign
+Loaded fp16 on GPU (~2 GB, vs ~4 GB at fp32). Even so, PickScore + CLIP-L (fp32, ~1.7 GB)
++ OWLv2 (~0.6 GB) next to both UNets (~9.6 GB) leaves no room for SDXL activations at 1024 px
+on a 15 GB T4, so the website scores only after a job's images are all generated and then
+parks the scorers on CPU (`Scorers.park()`). bench/score.py runs in its own process, without
+the UNets, so it needs neither. Sanity check on a sign
 reading OPEN 24 HOURS: matching prompt 22.72, same prompt with "CLOSED" 19.57, unrelated
 prompt 17.20.
 
