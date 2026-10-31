@@ -24,7 +24,7 @@ pip install -r requirements.txt
 python bench/run.py --controls --prompts prompts/pilot.csv      # Level 2
 python bench/run.py --sweep    --prompts prompts/pilot.csv      # Level 3
 python bench/score.py --prompts prompts/pilot.csv               # adds quality columns
-python bench/plot.py --metric pick_score                      # charts + tables
+python bench/plot.py                                          # charts + tables (metric = vqa_score)
 python bench/decider_eval.py --provider heuristic               # Level 4 baseline (offline)
 TYPESAFE_API_KEY=... python bench/decider_eval.py               # Level 4 with Jev
 ```
@@ -53,8 +53,8 @@ rerouter/handoff.py         generate(): UNet swap via callback_on_step_end (or t
 rerouter/decider.py         Jev typed questions -> profile -> (direction, switch_fraction); regex baseline
 rerouter/utils.py           config, git hash, prompt files, `expected` format, append-only results CSV
 bench/run.py                run controls / one setting / full sweep / router; resumable; errors logged as rows
-bench/score.py              PickScore, HPSv2 (opt), CLIPScore, OCR match + CER, OWLv2 object count
-bench/plot.py               cost-vs-quality curves, per-group winners, matched-cost test, success check
+bench/score.py              VQAScore, PickScore, HPSv2 (opt), CLIPScore, OCR match + CER, OWLv2 object count, GenEval rules
+bench/plot.py               trade-off curves (% cost saved vs quality change), prompt-type heatmap, large-vs-small advantage, winners, order head-to-head
 bench/decider_eval.py       answer key from the sweep, 70/30 split, learn policy, evaluate router by lookup
 bench/compat_check.py       VAE/scheduler/weight-fingerprint table for model pairs
 app/app.py                  Gradio website: type a prompt, pick a method and switch point, see images + GPU-seconds
@@ -88,7 +88,7 @@ docs/                       compat_report.md, NOTES.md, make_notebooks.py
 |---|---|---|
 | 1 | clean handoff image each way, timing table, pair map | `notebooks/model_handoff_test.ipynb` -> `results/level1_*.{csv,png}` |
 | 2 | cost-vs-quality chart with the three controls | `scripts/level2_controls.sh` -> `results/plots/` |
-| 3 | both method curves + controls, per-group winners, beats control 3? | `scripts/level3_sweep.sh` -> `winners_*.md`, `success_*.md`, `order_head_to_head_*.csv` |
+| 3 | both method curves + controls, per-group winners, beats control 3? | `scripts/level3_sweep.sh` -> `tradeoff_*.png`, `heatmap_*.png`, `advantage_*.md`, `success_*.md`, `order_head_to_head_*.csv` |
 | 4 | router point next to best fixed setting on held-out 30% | `scripts/level4_router.sh` -> `results/router_eval.md` |
 
 ## Memory on a 15 GB T4

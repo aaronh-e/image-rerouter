@@ -25,13 +25,15 @@ def test_single_scores_every_image_and_logs_them(tmp_path):
                                          [list(app.METHODS)[0], "Large model only", "Small model only"], 0.4,
                                          True, "OPEN", "", 0, progress=no_progress)
     assert len(rows) == 3
-    header = ["run", "plan", "GPU-seconds", "peak GB", "$/1000 images", "file", "vs large", "PickScore", "CLIPScore", "OCR text", "count"]
+    header = ["run", "plan", "GPU-seconds", "peak GB", "$/1000 images", "file", "vs large",
+              "VQAScore", "PickScore", "CLIPScore", "OCR text", "count"]
     assert all(len(r) == len(header) for r in rows)
     for r in rows:
         assert r[4] > 0                                    # cost in dollars
-        assert r[7] != "" and r[8] != ""                   # PickScore, CLIPScore
-        assert r[9].startswith(("yes", "no"))              # OCR checked because expected text was given
-        assert r[10] == ""                                 # no count asked for
+        assert 0 <= r[7] <= 1                              # VQAScore is a probability
+        assert r[8] != "" and r[9] != ""                   # PickScore, CLIPScore
+        assert r[10].startswith(("yes", "no"))             # OCR checked because expected text was given
+        assert r[11] == ""                                 # no count asked for
     logged = list(csv.DictReader(open(tmp_path / "scores.csv")))
     assert [l["image"] for l in logged] == [r[5] for r in rows]
 
@@ -40,10 +42,10 @@ def test_count_check_and_scoring_off(tmp_path):
     app = load_app(tmp_path)
     _, rows, _ = app.run_single("three red cups", 1, 30, 1024, 7.5, ["Large model only"], 0.0,
                                 True, "", "cup", 3, progress=no_progress)
-    assert rows[0][9] == "" and rows[0][10].endswith("/3")
+    assert rows[0][10] == "" and rows[0][11].endswith("/3")
     _, rows, _ = app.run_single("three red cups", 1, 30, 1024, 7.5, ["Large model only"], 0.0,
                                 False, "", "cup", 3, progress=no_progress)
-    assert rows[0][7:] == ["", "", "", ""]
+    assert rows[0][7:] == ["", "", "", "", ""]
 
 
 def test_pick_any_mix_of_methods(tmp_path):
@@ -70,9 +72,11 @@ def test_no_method_ticked_is_an_error(tmp_path):
 def test_sweep_rows_carry_cost_and_scores(tmp_path):
     app = load_app(tmp_path)
     _, rows, _ = app.run_sweep("an apple", 42, 30, 1024, 7.5, "0.4", True, True, "", "", 0, progress=no_progress)
-    header = ["setting", "plan", "GPU-seconds", "$/1000 images", "vs large", "PickScore", "CLIPScore", "OCR text", "count"]
+    header = ["setting", "plan", "GPU-seconds", "peak GB", "$/1000 images", "vs large",
+              "VQAScore", "PickScore", "CLIPScore", "OCR text", "count"]
     assert len(rows) == 4 and all(len(r) == len(header) for r in rows)
-    assert all(r[5] != "" for r in rows)
+    assert all(r[3] > 0 for r in rows)                     # peak GB, same as the One setting tab
+    assert all(r[6] != "" and r[7] != "" for r in rows)
 
 
 def test_failed_scorer_says_unavailable_not_blank(tmp_path):
@@ -80,6 +84,7 @@ def test_failed_scorer_says_unavailable_not_blank(tmp_path):
 
     class Broken:
         disabled = {"pick_score": "out of memory", "ocr": "boom"}
+        def vqa_score(self, path, prompt): return 0.81
         def pick_score(self, path, prompt): return None
         def clip_score(self, path, prompt): return 28.5
         def ocr(self, path, text): return None, None, None
@@ -89,7 +94,7 @@ def test_failed_scorer_says_unavailable_not_blank(tmp_path):
     app.STATE["scorers"] = Broken()
     _, rows, note = app.run_single("three cups", 1, 30, 1024, 7.5, ["Large model only"], 0.0,
                                    True, "OPEN", "cup", 3, progress=no_progress)
-    assert rows[0][7:] == ["unavailable", 28.5, "unavailable", "3/3"]
+    assert rows[0][7:] == [0.81, "unavailable", 28.5, "unavailable", "3/3"]
     assert "pick_score" in note and "ocr" in note
 
 
@@ -141,6 +146,7 @@ def test_scoring_runs_after_all_generation_then_parks(tmp_path):
 
     class Rec:
         disabled = {}
+        def vqa_score(self, p, t): return 0.5
         def pick_score(self, p, t): events.append("score"); return 20.0
         def clip_score(self, p, t): return 30.0
         def ocr(self, p, t): return 1, 0.0, t
@@ -153,3 +159,25 @@ def test_scoring_runs_after_all_generation_then_parks(tmp_path):
     events.clear()
     app.run_sweep("an apple", 1, 30, 1024, 7.5, "0.4", True, True, "", "", 0, progress=no_progress)
     assert events == ["gen"] * 4 + ["score"] * 4 + ["park"]
+
+
+def test_checks_are_inferred_from_the_prompt(tmp_path):
+    app = load_app(tmp_path)
+    assert app.infer_checks('a storefront sign that says "OPEN 24 HOURS", photo') == ("OPEN 24 HOURS", "", 0)
+    assert app.infer_checks("three red cups to the left of a blue plate, photo") == ("", "red cup", 3)
+    assert app.infer_checks("a purple umbrella to the right of two black suitcases") == ("", "black suitcase", 2)
+    assert app.infer_checks("one red fire hydrant between two trees") == ("", "red fire hydrant", 1)
+    assert app.infer_checks('a door with a sign that says "ROOM 101"') == ("ROOM 101", "", 0)   # quoted digits are not a count
+    assert app.infer_checks("a fox in a snowy forest, watercolor") == ("", "", 0)
+
+
+def test_inferred_checks_match_every_stored_answer(tmp_path):
+    from rerouter.utils import parse_expected
+    app = load_app(tmp_path)
+    for r in csv.DictReader(open(ROOT / "prompts" / "full.csv", encoding="utf-8")):
+        e = parse_expected(r["expected"])
+        text, obj, n = app.infer_checks(r["prompt"])
+        if "text" in e:
+            assert text == e["text"], r["prompt"]
+        if "count" in e:   # stored objects sometimes drop the colour: "banana" vs "yellow banana"
+            assert n == e["count"] and (obj == e["object"] or obj.endswith(" " + e["object"])), r["prompt"]

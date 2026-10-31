@@ -2,14 +2,18 @@
 
 Read RESEARCH_PLAN.md (the brief) and docs/NOTES.md (decisions + findings) first.
 This project started in a cloud session; the code, tests and docs are complete and
-committed. Nothing has run on a GPU yet.
+committed. On 2026-10-30 the user confirmed a handoff works on a GPU via the website;
+the benchmark scripts (Levels 2-4) have not run on a GPU yet.
 
 ## State of play
 - Level 1's VAE question is answered analytically (docs/compat_report.md): SSD-1B ships
   the sdxl-vae-fp16-fix VAE, so SDXL and SSD-1B share one latent space.
-- 47 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
+- 58 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
 - The website (app/app.py) has optional quality checks that reuse bench/score.py's Scorers
-  (PickScore, CLIPScore, OCR, count) plus a $/1000 column; scores go to results/app/scores.csv.
+  (VQAScore, PickScore, CLIPScore, OCR, count) plus a $/1000 column; scores go to results/app/scores.csv.
+  Its GenEval tab runs GenEval prompts with GenEval's rules (OWLv2 + CLIP, not the official detector).
+- prompts/paper.csv (built by prompts/make_paper.py) = full.csv's 200 + GenEval's 553.
+  VQAScore uses Qwen2.5-VL-3B, not t2v_metrics. Why: docs/NOTES.md.
 - PickScore replaced ImageReward (broken on transformers 5); column is `pick_score`. Why: docs/NOTES.md.
 - Colab: the notebooks uninstall torchao after pip install (Colab's old torchao breaks
   new diffusers' import with a FqnToConfig error). Edit docs/make_notebooks.py, not the .ipynb files.

@@ -6,9 +6,9 @@
 
 This is a class research project. It asks whether a cheap "decider" can route parts of the image-generation process between a **small** and a **large** diffusion model, to cut compute without a noticeable loss in quality. It's inspired by **Jev** (TypeSafe AI), a text-only decision model that routes chatbot requests between cheap and expensive LLMs. Jev can't see images or generate them. It reads text and returns probabilities for typed questions (yes/no, pick-one, score). This project applies the same idea *inside* a diffusion model.
 
-**Central goal:** spend less compute per image without quality dropping substantially.
+**Central goal:** measure the exchange rate between cost and quality: how much quality is given up for each % of compute saved, and for which kinds of prompts handing off to the small model is the most efficient. The large model is expected to be better; the question is how much better, and whether that difference is worth its cost.
 
-**Main metric:** GPU-seconds per image that passes the quality bar, compared with the large model doing all the work.
+**Main result:** for each method and prompt group, a curve of **% cost saved** (GPU-seconds vs the large model alone at full steps) against **quality lost** (paired change in the primary metric vs the same reference, with a 95% CI). See section 4 for the metrics and charts.
 
 ## 2. The two methods
 
@@ -118,6 +118,8 @@ There's no local GPU. Use **Google Colab (T4 or better)** or an hourly cloud GPU
   5. **stylized:** stylized art
   6. **dense:** long, dense prompts (DPG-Bench style)
 - For the **composition** and **text** prompts, store the expected answer: the object count for counting prompts, the exact string for text prompts.
+- **Per-group claims need `full.csv`** (30–40 prompts per group). The pilot's 10 per group is for checking the pipeline and scorers, not for conclusions.
+- **GenEval (optional):** `prompts/paper.csv` adds GenEval's 553 prompts. If time is short, run only `geneval_counting` and `geneval_position` (180 prompts), which test the same thing as `composition` and are comparable with published numbers.
 
 ### Fairness rule
 
@@ -128,12 +130,25 @@ Every method uses the same prompts, seeds, step count (30 by default), resolutio
 - `gpu_seconds`: wall-clock generation time, with `torch.cuda.synchronize()` before and after
 - `peak_mem_gb`: `torch.cuda.max_memory_allocated()`, reset before each run
 - `usd_per_1000`: `gpu_seconds × hourly_price / 3600 × 1000`
+- **Headline cost:** `% cost saved = 1 − gpu_seconds / gpu_seconds(large@30)`. Report `peak_mem_gb` next to it: a handoff keeps both models on the GPU, so it can save time but need more memory than the large model alone.
 
 ### Quality measurements
 
-- **Automatic:** PickScore or HPSv2 (predicted human preference) and CLIPScore (prompt match). PickScore replaced ImageReward on 2026-10-26, because ImageReward no longer runs with current libraries (see docs/NOTES.md).
-- **Objective:** an OCR exact-match or character-error rate for `text` prompts, and an object-count match for `composition` prompts (counting by hand is fine for the pilot)
-- **Human (optional):** blind side-by-side pairs, at least 100 per comparison, analyzed with a sign test
+Fixed before any results are seen, so no metric gets picked after the fact. Each metric has one job:
+
+| Role | Metric | Prompts |
+|---|---|---|
+| **Primary** (headline chart, success check) | `vqa_score`: VQAScore recipe with Qwen2.5-VL-3B, P("Yes") that the image shows the prompt, 0–1 | all |
+| **Secondary** (does it still look good?) | `pick_score`: PickScore_v1, predicted human preference. Replaced ImageReward on 2026-10-26 (see docs/NOTES.md). | all |
+| **Objective, per group** | `ocr_match` (expected text found; `ocr_cer` as backup), `count_match` (OWLv2 count is exact), `geneval_pass` (GenEval's rules) | text, composition, GenEval |
+| **Human** | blind side-by-side pairs, analyzed with a sign test. **Required for `hands_faces`**, which has no automatic check, so the Method 2 prediction (hands suffer) can't be tested without it. At least 30 pairs per comparison tested. | hands_faces (+ spot checks) |
+
+`clip_score` and `hpsv2` are not reported: VQAScore replaces CLIPScore for prompt match (CLIP mostly ignores counts, positions and color binding), and HPSv2 duplicates PickScore. They can still be computed, e.g. for comparison with older papers.
+
+**How quality is expressed:**
+- **Quality lost** = paired change vs `large@30`, averaged per prompt (seeds averaged first), with a 95% bootstrap CI over prompts. For 0–1 metrics this is in percentage points.
+- **Large-model advantage** = `large@30 − small@30`, per group. This is how much better the big model is. If it's about zero for a group, the small model alone is enough there and handoffs are moot.
+- **Advantage kept** = `(q − small@30) / (large@30 − small@30)`: 0 = as good as the small model, 1 = as good as the large one. Report it only for groups where the large-model advantage is significant, because the ratio is unstable when the gap is near zero.
 
 ### Controls (every method is compared against these)
 
@@ -141,13 +156,20 @@ Every method uses the same prompts, seeds, step count (30 by default), resolutio
 2. **Small model alone at full steps:** the cost floor
 3. **Large model alone with fewer steps** (e.g. 12, 18, 24): **the line to beat**. If cutting the large model's steps matches a method at the same cost, the routing adds nothing.
 
-### Main chart
+### Charts and tables
 
-A cost-vs-quality curve: GPU-seconds on the x axis, quality score on the y axis. Plot one line per method, sweeping its setting, plus the controls. Make it overall and per prompt group.
+1. **Trade-off curve (main chart):** x = % cost saved vs `large@30`, y = quality lost vs `large@30` (primary metric, 95% CI). One line each for control #3 (fewer steps), Method 1 and Method 2, plus `small@30` as a point. Overall, and one panel per prompt group. The slope is the exchange rate: quality lost per 10% of cost saved.
+2. **Prompt-type heatmap:** rows = prompt groups, columns = handoff settings, cell = quality change vs the **matched-cost control #3**, with significant cells marked. This answers "for which prompts is a handoff more efficient than just cutting the large model's steps?"
+3. **Large-model advantage table:** per group, `large@30 − small@30` on every reported metric, with CIs. This is the yardstick for the other two.
+4. **Order head-to-head:** `s2l@f` vs `l2s@(1−f)`, which cost exactly the same, paired per image, overall and per group.
+5. **Objective-metric versions** of chart 1 for `text` (`ocr_match`) and `composition` (`count_match`).
 
 ### Success criterion
 
-At least **30% fewer GPU-seconds** than the large model alone, with no significant quality loss, and **better than control #3** at the same cost.
+Reported per method and per group, not as one overall pass/fail:
+- **Efficient:** quality is better than the matched-cost control #3 (95% CI of the difference entirely above 0). Otherwise the handoff adds nothing over using fewer steps.
+- **Quality lost:** read off the trade-off curve, with its 95% CI. Don't treat "not significant" as "no loss": with few prompts the CI is wide enough to hide a real loss.
+- **Acceptable-loss threshold: not set yet.** Decide it before the full run if the project needs a yes/no answer to "can we cut cost without losing quality?". Until then, report the curves.
 
 ## 5. Scaffolded levels
 
@@ -174,10 +196,11 @@ Level 1 answers a yes/no question for each pair of open models: can model A star
 
 - [ ] Create `prompts/pilot.csv` (60 prompts) with columns `id, group, prompt, expected`.
 - [ ] Write `bench/run.py` to run any method over a prompt file and both seeds, saving images and logging one row per image.
-- [ ] Write `bench/score.py` to add PickScore/HPSv2, CLIPScore, OCR and count checks.
+- [ ] Write `bench/score.py` to add VQAScore, PickScore, OCR and count checks.
 - [ ] Run the three controls.
 - [ ] Spot-check 10 images by eye against their scores.
-- **Gate:** a cost-vs-quality chart showing the three controls.
+- [ ] Make the large-model advantage table (`large@30 − small@30` per group).
+- **Gate:** the trade-off curve showing the three controls, and the large-model advantage table.
 - **Fallback result:** how fast quality falls as steps are cut or the model shrinks (diminishing returns of compute).
 
 ### Level 3: Methods 1 and 2 (Weeks 3–4)
@@ -185,9 +208,9 @@ Level 1 answers a yes/no question for each pair of open models: can model A star
 - [ ] Method 1: switch from small to large at 0, 20, 40, 60, 80 and 100% of the steps.
 - [ ] Method 2: the same switch points, from large to small.
 - [ ] Add both curves to the control chart.
-- [ ] Make a table of the winning order for each prompt group at the same cost.
-- [ ] Check the predictions: composition accuracy for Method 1, OCR and hand quality for Method 2.
-- **Gate:** one chart with both curves and the controls, the per-group winner table, and an answer on whether either method beats control #3.
+- [ ] Make a table of the winning order for each prompt group at the same cost, and the prompt-type heatmap.
+- [ ] Check the predictions: composition accuracy for Method 1, OCR and hand quality (human check) for Method 2.
+- **Gate:** the trade-off curve with both methods and the controls, the prompt-type heatmap, and, per group, the largest cost saving that meets the success criterion.
 - **Fallback result:** T-Stitch's order vs. Hybrid SD's order, head to head on the same models and prompts. This is the project's main result.
 
 ### Level 4: Novel step, a per-prompt decider (Week 5)
@@ -230,7 +253,7 @@ image-rerouter/
 
 ### `results.csv` schema (one row per image)
 
-`prompt_id, group, seed, method, direction, switch_fraction, steps, gpu_type, gpu_seconds, peak_mem_gb, usd_per_1000, image_path, pick_score, hpsv2, clip_score, ocr_match, count_match, notes`
+`prompt_id, group, seed, method, direction, switch_fraction, steps, gpu_type, gpu_seconds, peak_mem_gb, usd_per_1000, image_path, vqa_score, pick_score, ocr_match, ocr_cer, count_match, count_detected, geneval_pass, notes` (plus `hpsv2`, `clip_score` when computed; not reported)
 
 ## 7. Rules for Claude Code
 

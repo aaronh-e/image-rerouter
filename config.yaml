@@ -52,6 +52,7 @@ scoring:
   owlv2_model: google/owlv2-base-patch16-ensemble
   owlv2_threshold: 0.3
   owlv2_nms_iou: 0.5        # boxes overlapping more than this count as one object
+  vqa_model: Qwen/Qwen2.5-VL-3B-Instruct   # VQAScore recipe (P("Yes")); ~7 GB, see bench/score.py
 
 decider:
   provider: typesafe        # "typesafe" (api.typesafe.ai), "aimlapi", or "heuristic" (offline keyword rules)

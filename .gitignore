@@ -11,3 +11,7 @@ results/manual_counts.csv
 .ipynb_checkpoints/
 .venv/
 results/app/
+results/*.zip
+results/*.bak
+results/smoke_images/
+results/smoke_plots/

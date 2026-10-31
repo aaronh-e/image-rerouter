@@ -102,6 +102,21 @@ the UNets, so it needs neither. Sanity check on a sign
 reading OPEN 24 HOURS: matching prompt 22.72, same prompt with "CLOSED" 19.57, unrelated
 prompt 17.20.
 
+**VQAScore and GenEval without their official packages (2026-10-28).** Both are now in
+bench/score.py and the website. Official VQAScore (t2v_metrics 3.0) pins torch==2.5.1,
+transformers==4.49.0, numpy==1.26.4, Pillow==10.0.0 and httpx==0.24.0 (Gradio 6 needs newer),
+plus apex/deepspeed, so it can't share an environment with this app (same problem as
+ImageReward above). Official GenEval scores with mmdet 2.x / mmcv-full 1.x. So: VQAScore =
+the paper's recipe (P("Yes") to 'Does this figure show "{prompt}"? Please answer yes or no.')
+with Qwen2.5-VL-3B-Instruct; GenEval = its 553 prompts (prompts/geneval_metadata.jsonl, MIT)
+and its pass/fail rules ported line for line (`geneval_judge`, `relative_position`), with OWLv2
++ NMS for Mask2Former and CLIP-L on box crops (no masks) for colours. One OWLv2 threshold for
+every task; GenEval uses 0.9 for counting because Mask2Former's scores run higher. Valid for
+comparing our methods with each other, not with published numbers; plan: hand-label ~100
+images and report each scorer's agreement. Qwen at ~7 GB doesn't fit beside both UNets on a
+T4, so on GPUs under 24 GB the website moves the image models to CPU while scoring
+(`ModelBank.move`, needs ~10 GB of system RAM). Untested on a GPU so far.
+
 **Level 4 is a lookup, not a rerun.** Because Level 3 generates every (prompt, seed,
 setting), routing a test prompt just means reading the row of the chosen setting. The
 router's cost and quality on the held-out 30% are exact, no GPU, and it's compared with

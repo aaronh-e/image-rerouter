@@ -36,10 +36,10 @@ def test_dry_run_resume_score_plot_router(tmp_path):
     assert df.loc[df.group == "text", "ocr_match"].notna().all()
     assert list(tmp_path.glob("results.*.csv.bak"))
 
-    o3 = run("bench/plot.py", "--results", str(out), "--out", str(plots))
-    assert (plots / "cost_vs_quality_pick_score.png").exists()
-    assert (plots / "cost_vs_quality_pick_score_by_group.png").exists()
-    assert (plots / "success_pick_score.md").exists()
+    o3 = run("bench/plot.py", "--results", str(out), "--out", str(plots))   # default metric = vqa_score
+    for f in ("tradeoff_vqa_score.png", "tradeoff_vqa_score_by_group.png", "tradeoff_vqa_score.csv", "heatmap_vqa_score.png",
+              "advantage_vqa_score.md", "cost_vs_quality_vqa_score.png", "success_vqa_score.md"):
+        assert (plots / f).exists(), f
     assert "Winners per group" in o3
 
     o4 = run("bench/decider_eval.py", "--results", str(out), "--provider", "heuristic", "--prompts", "prompts/pilot.csv",

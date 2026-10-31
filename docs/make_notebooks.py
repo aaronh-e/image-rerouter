@@ -275,8 +275,10 @@ if IN_COLAB:
                        if os.path.isdir(os.path.join(os.path.dirname(c), "rerouter")))
             shutil.move(src, WORK)
     %cd $WORK
-    if REPO_URL: !git pull -q
-    else: print(f"Using the code already in {WORK} (your first upload). To update it, set REPO_URL, or delete that folder and re-run.")
+    if REPO_URL:   # a ! command must start its own line, or Colab reports invalid syntax
+        !git pull -q
+    else:
+        print(f"Using the code already in {WORK} (your first upload). To update it, set REPO_URL, or delete that folder and re-run.")
     !pip install -q -r requirements.txt
     !pip uninstall -q -y torchao   # Colab's preinstalled torchao is too old for new diffusers (FqnToConfig import error); unused here
 import torch; print(torch.cuda.get_device_name(0))"""),
@@ -290,17 +292,19 @@ try:
 except Exception: pass"""),
 ("md", "## Smoke test (3 prompts, everything end to end, ~10 min)"),
 ("code", """!python bench/run.py --controls --prompts prompts/pilot.csv --limit 3 --out results/smoke.csv --images results/smoke_images
-!python bench/score.py --results results/smoke.csv --only clip pick_score
+!python bench/score.py --results results/smoke.csv --only vqa pick_score
 !python bench/plot.py --results results/smoke.csv --out results/smoke_plots
-from IPython.display import Image, display; display(Image("results/smoke_plots/cost_vs_quality_pick_score.png"))"""),
+from IPython.display import Image, display; display(Image("results/smoke_plots/tradeoff_vqa_score.png"))"""),
 ("md", """## Level 2: controls
 Large@30 (ceiling), small@30 (floor), large@12/18/24 (the line to beat). Re-run the same cell after any disconnect; finished rows are skipped."""),
 ("code", """!python bench/run.py --controls --prompts prompts/pilot.csv"""),
 ("code", """!python bench/score.py --prompts prompts/pilot.csv
+!python bench/plot.py --metric vqa_score
 !python bench/plot.py --metric pick_score
-!python bench/plot.py --metric clip_score
-display(Image("results/plots/cost_vs_quality_pick_score.png"))
-display(Image("results/plots/cost_vs_quality_pick_score_by_group.png"))"""),
+display(Image("results/plots/tradeoff_vqa_score.png"))
+display(Image("results/plots/tradeoff_vqa_score_by_group.png"))
+from IPython.display import Markdown
+display(Markdown(open("results/plots/advantage_vqa_score.md").read()))"""),
 ("md", "### Spot check: 10 random images against their scores (the plan's human sanity check)"),
 ("code", """import pandas as pd, matplotlib.pyplot as plt
 from PIL import Image as PILImage
@@ -309,7 +313,7 @@ df = df[~df.notes.astype(str).str.startswith("error")].sample(10, random_state=0
 fig, axes = plt.subplots(2, 5, figsize=(20, 9))
 for ax, (_, r) in zip(axes.flat, df.iterrows()):
     ax.imshow(PILImage.open(r.image_path)); ax.axis("off")
-    ax.set_title(f"{r.setting if 'setting' in r else r.direction}@{r.steps} PS={r.pick_score:.2f} CLIP={r.clip_score:.1f}\\n{r.prompt[:40]}", fontsize=8)
+    ax.set_title(f"{r.setting if 'setting' in r else r.direction}@{r.steps} VQA={r.vqa_score:.2f} PS={r.pick_score:.2f}\\n{r.prompt[:40]}", fontsize=8)
 plt.tight_layout(); plt.show()
 # Write what you see vs. the scores in results/spot_check.md"""),
 ("md", """## Level 3: the two methods
@@ -318,15 +322,17 @@ Both orders at switch fractions 0.2/0.4/0.6/0.8 (0 and 1 are the controls). Then
 - Method 2 (large first) should hurt **text/hands** → `ocr_match` on the text group; hands by eye."""),
 ("code", """!python bench/run.py --sweep --prompts prompts/pilot.csv"""),
 ("code", """!python bench/score.py --prompts prompts/pilot.csv
+!python bench/plot.py --metric vqa_score
 !python bench/plot.py --metric pick_score
 !python bench/plot.py --metric count_match --groups composition
 !python bench/plot.py --metric ocr_match --groups text
-display(Image("results/plots/cost_vs_quality_pick_score.png"))
-display(Image("results/plots/cost_vs_quality_pick_score_by_group.png"))
+display(Image("results/plots/tradeoff_vqa_score.png"))
+display(Image("results/plots/tradeoff_vqa_score_by_group.png"))
+display(Image("results/plots/heatmap_vqa_score.png"))
 from IPython.display import Markdown
-display(Markdown(open("results/plots/winners_pick_score.md").read()))
-display(Markdown(open("results/plots/success_pick_score.md").read()))
-display(pd.read_csv("results/plots/order_head_to_head_pick_score.csv"))"""),
+display(Markdown(open("results/plots/advantage_vqa_score.md").read()))
+display(Markdown(open("results/plots/success_vqa_score.md").read()))
+display(pd.read_csv("results/plots/order_head_to_head_vqa_score.csv"))"""),
 ("md", """### Hands by eye
 OCR and counting are automatic; hand quality is not. Show the hands_faces prompts at the same cost (s2l@0.4 vs l2s@0.6) side by side and tally which looks right."""),
 ("code", """df = pd.read_csv("results/results.csv"); df = df[(df.group == "hands_faces") & (df.seed == 42)]

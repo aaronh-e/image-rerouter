@@ -1,18 +1,23 @@
 #!/usr/bin/env python
-"""Cost-vs-quality curves, the per-group winner table, and the success check.
+"""Trade-off curves, the prompt-type heatmap, the large-model advantage table, and more.
 
-    python bench/plot.py                          # metric = pick_score
-    python bench/plot.py --metric clip_score
+    python bench/plot.py                          # metric = vqa_score (the primary metric)
+    python bench/plot.py --metric pick_score
     python bench/plot.py --metric ocr_match --groups text
     python bench/plot.py --metric count_match --groups composition
 
 Outputs (results/plots/):
-    cost_vs_quality_<metric>.png            overall curve: controls + s2l + l2s (+ router)
-    cost_vs_quality_<metric>_by_group.png   2x3 small multiples, one per prompt group
+    tradeoff_<metric>.png                   MAIN CHART: % cost saved vs quality change, both vs large@30
+    tradeoff_<metric>_by_group.png          the same, one panel per prompt group
+    tradeoff_<metric>.csv                   the numbers behind both, plus 'advantage kept'
+    heatmap_<metric>.png / .csv             group x handoff setting: quality change vs the matched-cost large-only control
+    advantage_<metric>.md / .csv            per group: large@30 - small@30, how much better the big model is
+    cost_vs_quality_<metric>.png            raw view: GPU-seconds vs raw score (sanity check)
+    cost_vs_quality_<metric>_by_group.png   the raw view per group
     winners_<metric>.md / .csv              per group, the best method at each control-3 budget
     matched_cost_<metric>.csv               each handoff setting vs the nearest-cost large-only control
     order_head_to_head_<metric>.csv         s2l@f vs l2s@(1-f): same cost, paired comparison of the two orders
-    success_<metric>.md                     which settings meet the 30%-cheaper + no-loss criterion
+    success_<metric>.md                     per setting: cost saved, quality change, and whether it beats the matched control
 
 Conventions: x = mean GPU-seconds per image, y = mean metric, error bars = standard
 error over images (prompt x seed). "large@N" = control #3 at N steps.
@@ -35,7 +40,10 @@ from rerouter import utils  # noqa: E402
 COLORS = {"control": "#2a78d6", "s2l": "#eb6834", "l2s": "#1baf7a", "router": "#6250d6"}
 GRID, INK, MUTED = "#e3e2de", "#0b0b0b", "#52514e"
 GROUPS = ["composition", "text", "hands_faces", "product", "stylized", "dense"]
-HIGHER_IS_BETTER = {"pick_score": True, "hpsv2": True, "clip_score": True, "ocr_match": True, "count_match": True, "ocr_cer": False}
+HIGHER_IS_BETTER = {"vqa_score": True, "pick_score": True, "hpsv2": True, "clip_score": True, "ocr_match": True,
+                    "count_match": True, "geneval_pass": True, "ocr_cer": False}
+# Diverging pair for the heatmap (dataviz reference palette): red = worse, gray = no change, blue = better.
+DIVERGING = ("#e34948", "#f0efec", "#2a78d6")
 
 
 # --------------------------------------------------------------- loading ----
@@ -153,6 +161,114 @@ def plot_by_group(df, metric, out_dir):
     return p
 
 
+def draw_tradeoff(ax, t: pd.DataFrame, metric: str, ref: str):
+    """x = % cost saved, y = quality change vs the reference, error bars = 95% CI over prompts."""
+    ax.axhline(0, color=MUTED, lw=1, ls="--")
+    def bars(m):
+        return [m.delta - m.ci_lo, m.ci_hi - m.delta]
+    ctl = t[(t.family == "control") & (t.direction == "large")].sort_values("saving")
+    if len(ctl):
+        ax.errorbar(ctl.saving, ctl.delta, yerr=bars(ctl), color=COLORS["control"], lw=2, marker="o", ms=7, capsize=2,
+                    label="control: large only, fewer steps")
+    small = t[(t.family == "control") & (t.direction == "small")]
+    if len(small):
+        ax.errorbar(small.saving, small.delta, yerr=bars(small), color=COLORS["control"], lw=0, elinewidth=1.5, marker="s", ms=8,
+                    mfc="white", mew=2, capsize=2, label="control: small only")
+    # s2l@f and l2s@(1-f) cost exactly the same, so nudge them apart to keep both error bars visible
+    for fam, lab, nudge in (("s2l", "Method 1: small -> large", -0.004), ("l2s", "Method 2: large -> small", 0.004)):
+        m = t[t.family == fam].sort_values("saving")
+        if len(m):
+            ax.errorbar(m.saving + nudge, m.delta, yerr=bars(m), color=COLORS[fam], lw=2, marker="o", ms=7, capsize=2, label=lab)
+    rt = t[t.family == "router"]
+    if len(rt):
+        ax.errorbar(rt.saving, rt.delta, yerr=bars(rt), color=COLORS["router"], lw=0, elinewidth=1.5, marker="*", ms=14, capsize=2, label="Jev router")
+    _style(ax, metric)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+    ax.set_xlabel(f"cost saved vs {ref} (further right = cheaper)", color=MUTED, fontsize=9)
+    better = "higher" if HIGHER_IS_BETTER.get(metric, True) else "lower"
+    ax.set_ylabel(f"{metric.replace('_', ' ')} change vs {ref}\n(above 0 = better; {better} raw score is better)", color=MUTED, fontsize=9)
+
+
+def plot_tradeoff(tt: pd.DataFrame, metric: str, out_dir, ref: str, title_suffix=""):
+    """The main chart (overall) and the same per prompt group. Returns both paths."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    t = tt[tt.group == "all"]
+    fig, ax = plt.subplots(figsize=(8, 5), dpi=150)
+    draw_tradeoff(ax, t, metric, ref)
+    ax.set_title(f"How much quality each % of cost saving gives up{title_suffix}  (95% CI over {int(t.n.max()) if len(t) else 0} prompts)",
+                 color=INK, fontsize=11, loc="left")
+    ax.legend(frameon=False, fontsize=8, loc="best")
+    fig.tight_layout()
+    p1 = Path(out_dir) / f"tradeoff_{metric}.png"
+    fig.savefig(p1); plt.close(fig)
+
+    groups = [g for g in GROUPS if g in set(tt.group)]
+    if not groups:
+        return p1, None
+    ncol = 3; nrow = math.ceil(len(groups) / ncol)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(4.4 * ncol, 3.6 * nrow), dpi=150, squeeze=False, sharex=True)
+    for k, (ax, g) in enumerate(zip(axes.flat, groups)):
+        draw_tradeoff(ax, tt[tt.group == g], metric, ref)
+        ax.set_title(g, color=INK, fontsize=10, loc="left")
+        if k % ncol:                           # axis titles once per row / column, not on every panel
+            ax.set_ylabel("")
+        if k < len(groups) - ncol:
+            ax.set_xlabel("")
+    for ax in list(axes.flat)[len(groups):]:
+        ax.axis("off")
+    handles, labels = axes.flat[0].get_legend_handles_labels()
+    fig.legend(handles, labels, frameon=False, fontsize=8, loc="lower center", ncol=min(5, len(labels)))
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    p2 = Path(out_dir) / f"tradeoff_{metric}_by_group.png"
+    fig.savefig(p2); plt.close(fig)
+    return p1, p2
+
+
+def plot_heatmap(hm: pd.DataFrame, metric: str, out_dir):
+    """Rows = prompt groups, columns = handoff settings, cell = quality change vs the
+    matched-cost large-only control. The number is printed in every cell and * marks a
+    95% CI that excludes 0, so the reading never depends on colour alone."""
+    if hm.empty:
+        return None
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LinearSegmentedColormap
+    order = sorted(set(hm.setting), key=lambda s: (s.split("@")[0] != "s2l", s))
+    rows = [g for g in ["all"] + GROUPS if g in set(hm.group)]
+    grid = hm.pivot(index="group", columns="setting", values="delta").reindex(index=rows, columns=order)
+    sig = hm.pivot(index="group", columns="setting", values="significant").reindex(index=rows, columns=order)
+    lim = float(np.nanmax(np.abs(grid.to_numpy()))) if grid.notna().any().any() else 1.0
+    fig, ax = plt.subplots(figsize=(1.1 * len(order) + 2.5, 0.55 * len(rows) + 1.8), dpi=150)
+    im = ax.imshow(grid.to_numpy(dtype=float), cmap=LinearSegmentedColormap.from_list("div", DIVERGING),
+                   vmin=-lim or -1, vmax=lim or 1, aspect="auto")
+    for i in range(len(rows)):
+        for j in range(len(order)):
+            v = grid.iat[i, j]
+            if pd.notna(v):
+                ax.text(j, i, f"{v:+.3f}{'*' if sig.iat[i, j] else ''}", ha="center", va="center", fontsize=8, color=INK)
+    def small_share(s):                        # s2l@0.2 = small runs the first 20%; l2s@0.2 = small runs the last 80%
+        d, f = s.split("@")
+        return f"{s}\nsmall does {float(f) if d == 's2l' else 1 - float(f):.0%}"
+    ax.set_xticks(range(len(order)), [small_share(s) for s in order], fontsize=8, color=MUTED)
+    ax.set_yticks(range(len(rows)), rows, fontsize=9, color=MUTED)
+    ax.set_xticks(np.arange(-0.5, len(order)), minor=True); ax.set_yticks(np.arange(-0.5, len(rows)), minor=True)
+    ax.grid(which="minor", color="white", linewidth=2); ax.tick_params(which="minor", length=0)
+    for s in ax.spines.values():
+        s.set_visible(False)
+    cb = fig.colorbar(im, ax=ax, shrink=0.8)
+    cb.ax.tick_params(labelsize=8, colors=MUTED)
+    cb.set_label(f"{metric.replace('_', ' ')} change vs same-cost large-only control\n(blue = handoff better, * = 95% CI excludes 0)",
+                 fontsize=8, color=MUTED)
+    ax.set_title("Where does a handoff beat just cutting the large model's steps?", color=INK, fontsize=11, loc="left")
+    fig.tight_layout()
+    p = Path(out_dir) / f"heatmap_{metric}.png"
+    fig.savefig(p); plt.close(fig)
+    return p
+
+
 # -------------------------------------------------------------- analysis ----
 
 def sign_test_p(wins: int, losses: int) -> float:
@@ -247,26 +363,90 @@ def order_head_to_head(df: pd.DataFrame, metric: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def success_report(df: pd.DataFrame, metric: str, matched: pd.DataFrame, ref_steps: int, min_saving: float = 0.30) -> str:
+def _oriented(d: dict, metric: str) -> tuple[float, float, float]:
+    """(delta, ci_lo, ci_hi) flipped for lower-is-better metrics, so above 0 always means better."""
+    if HIGHER_IS_BETTER.get(metric, True):
+        return d["mean_delta"], d["ci_lo"], d["ci_hi"]
+    return -d["mean_delta"], -d["ci_hi"], -d["ci_lo"]
+
+
+def tradeoff_table(df: pd.DataFrame, metric: str, ref_steps: int) -> pd.DataFrame:
+    """Per group ('all' + each group) and setting: % cost saved and the paired quality
+    change vs large@ref_steps with a 95% CI over prompts. 'advantage_kept' = (q - small) /
+    (large - small): 0 = as good as the small model, 1 = as good as the large one; only
+    filled where the large model is significantly better, since the ratio is unstable
+    when that gap is near zero."""
+    ref, small = f"large@{int(ref_steps)}", f"small@{int(ref_steps)}"
+    rows = []
+    for g in ["all"] + [x for x in GROUPS if x in set(df["group"])]:
+        sub = df if g == "all" else df[df["group"] == g]
+        agg = aggregate(sub, metric)
+        if ref not in set(agg.setting):
+            continue
+        ref_cost, ref_q = agg.loc[agg.setting == ref, ["cost", "q"]].iloc[0]
+        gap_ok = small in set(agg.setting) and _oriented(paired_delta(sub, metric, ref, small), metric)[1] > 0
+        small_q = agg.loc[agg.setting == small, "q"].iloc[0] if gap_ok else np.nan
+        for _, r in agg.iterrows():
+            d = paired_delta(sub, metric, r.setting, ref)
+            delta, lo, hi = _oriented(d, metric)
+            rows.append(dict(group=g, setting=r.setting, family=r.family, direction=r.direction, cost=r.cost,
+                             saving=1 - r.cost / ref_cost, quality=r.q, delta=delta, ci_lo=lo, ci_hi=hi, n=d["n"],
+                             advantage_kept=(r.q - small_q) / (ref_q - small_q) if gap_ok else np.nan))
+    return pd.DataFrame(rows)
+
+
+def advantage_table(df: pd.DataFrame, metric: str, ref_steps: int) -> pd.DataFrame:
+    """Per group: how much better the large model is than the small one at full steps.
+    The yardstick for every other number: if it is ~0, the small model alone is enough."""
+    ref, small = f"large@{int(ref_steps)}", f"small@{int(ref_steps)}"
+    rows = []
+    for g in ["all"] + [x for x in GROUPS if x in set(df["group"])]:
+        sub = df if g == "all" else df[df["group"] == g]
+        agg = aggregate(sub, metric).set_index("setting")
+        if ref not in agg.index or small not in agg.index:
+            continue
+        d = paired_delta(sub, metric, ref, small)
+        delta, lo, hi = _oriented(d, metric)
+        rows.append(dict(group=g, large=round(agg.at[ref, "q"], 4), small=round(agg.at[small, "q"], 4),
+                         advantage=round(delta, 4), ci_lo=round(lo, 4), ci_hi=round(hi, 4), n_prompts=d["n"],
+                         p_sign=round(d["p_sign"], 4), large_is_better="yes" if lo > 0 else ("no, small is" if hi < 0 else "not shown")))
+    return pd.DataFrame(rows)
+
+
+def heatmap_frame(df: pd.DataFrame, metric: str) -> pd.DataFrame:
+    """Per group and handoff setting: quality change vs the matched-cost large-only control."""
+    rows = []
+    for g in ["all"] + [x for x in GROUPS if x in set(df["group"])]:
+        m = matched_cost_table(df if g == "all" else df[df["group"] == g], metric)
+        if m.empty or "mean_delta" not in m:
+            continue
+        for _, r in m[m.setting.str.match(r"^(s2l|l2s)@") & m.mean_delta.notna()].iterrows():
+            delta, lo, hi = _oriented(r, metric)
+            rows.append(dict(group=g, setting=r.setting, control=r.control, delta=delta, ci_lo=lo, ci_hi=hi,
+                             significant=bool(lo > 0 or hi < 0)))
+    return pd.DataFrame(rows)
+
+
+def success_report(df: pd.DataFrame, metric: str, matched: pd.DataFrame, ref_steps: int) -> str:
     """ref_steps is config generation.steps: the reference must not drift to whatever
-    the largest step count in the data happens to be."""
+    the largest step count in the data happens to be. No acceptable-loss threshold is
+    applied yet (RESEARCH_PLAN.md section 4): the loss is reported, not judged."""
     agg = aggregate(df, metric)
     ref = agg[agg.setting == f"large@{int(ref_steps)}"]
     if ref.empty:
         return "No full-step large control found; run the controls first.\n"
     ref = ref.iloc[0]
-    lines = [f"# Success check ({metric})", "", f"Reference: {ref.setting} at {ref.cost:.2f} GPU-s, {metric} = {ref.q:.3f}", "",
-             f"Criterion: >= {int(min_saving * 100)}% fewer GPU-seconds than the reference, quality delta vs reference whose 95% CI includes 0 or is positive, and beats the matched-cost large-only control (95% CI of the delta entirely above 0). CIs resample prompts.", "",
-             "| setting | GPU-s | saving | delta vs ref [95% CI] | vs matched control | passes? |", "|---|---|---|---|---|---|"]
+    lines = [f"# Cost saved vs quality change ({metric})", "", f"Reference: {ref.setting} at {ref.cost:.2f} GPU-s, {metric} = {ref.q:.3f}", "",
+             "'Beats control' = better than the large model alone at about the same cost (95% CI of the difference entirely above 0); "
+             "if not, the handoff adds nothing over cutting steps. CIs resample prompts. No acceptable-loss threshold is set yet.", "",
+             "| setting | GPU-s | cost saved | change vs ref [95% CI] | vs matched control | beats control? |", "|---|---|---|---|---|---|"]
     for _, r in agg[agg.family.isin(["s2l", "l2s", "router"])].iterrows():
         saving = 1 - r.cost / ref.cost
         d = paired_delta(df, metric, r.setting, ref.setting)
         m = matched[matched.setting == r.setting]
         beats = (not m.empty) and pd.notna(m.iloc[0].get("ci_lo", np.nan)) and m.iloc[0]["ci_lo"] > 0
-        no_loss = pd.notna(d["ci_hi"]) and d["ci_hi"] >= 0
-        ok = saving >= min_saving and no_loss and beats
         mtxt = f"{m.iloc[0]['mean_delta']:+.3f} [{m.iloc[0]['ci_lo']:+.3f}, {m.iloc[0]['ci_hi']:+.3f}] vs {m.iloc[0]['control']}" if not m.empty and pd.notna(m.iloc[0].get("mean_delta", np.nan)) else "n/a"
-        lines.append(f"| {r.setting} | {r.cost:.2f} | {saving:+.0%} | {d['mean_delta']:+.3f} [{d['ci_lo']:+.3f}, {d['ci_hi']:+.3f}] | {mtxt} | {'YES' if ok else 'no'} |")
+        lines.append(f"| {r.setting} | {r.cost:.2f} | {saving:+.0%} | {d['mean_delta']:+.3f} [{d['ci_lo']:+.3f}, {d['ci_hi']:+.3f}] | {mtxt} | {'YES' if beats else 'no'} |")
     return "\n".join(lines) + "\n"
 
 
@@ -274,7 +454,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=None)
     ap.add_argument("--results", default=None)
-    ap.add_argument("--metric", default="pick_score")
+    ap.add_argument("--metric", default="vqa_score")
     ap.add_argument("--groups", nargs="+", default=None)
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
@@ -287,7 +467,18 @@ def main(argv=None):
     if df[args.metric].notna().sum() == 0:
         sys.exit(f"no values for metric {args.metric}; run bench/score.py first")
 
-    p1, agg = plot_overall(df, args.metric, out_dir, f" ({'+'.join(args.groups)})" if args.groups else "")
+    suffix = f" ({'+'.join(args.groups)})" if args.groups else ""
+    ref_steps = cfg["generation"]["steps"]
+    tt = tradeoff_table(df, args.metric, ref_steps)
+    tt.to_csv(out_dir / f"tradeoff_{args.metric}.csv", index=False)
+    pt1, pt2 = plot_tradeoff(tt, args.metric, out_dir, f"large@{ref_steps}", suffix) if len(tt) else (None, None)
+    hm = heatmap_frame(df, args.metric)
+    hm.to_csv(out_dir / f"heatmap_{args.metric}.csv", index=False)
+    ph = plot_heatmap(hm, args.metric, out_dir)
+    adv = advantage_table(df, args.metric, ref_steps)
+    adv.to_csv(out_dir / f"advantage_{args.metric}.csv", index=False)
+    (out_dir / f"advantage_{args.metric}.md").write_text(adv.to_markdown(index=False) if len(adv) else "no data\n")
+    p1, agg = plot_overall(df, args.metric, out_dir, suffix)
     p2 = plot_by_group(df, args.metric, out_dir)
     win = winners_table(df, args.metric)
     matched = matched_cost_table(df, args.metric)
@@ -296,17 +487,20 @@ def main(argv=None):
     matched.to_csv(out_dir / f"matched_cost_{args.metric}.csv", index=False)
     h2h = order_head_to_head(df, args.metric)
     h2h.to_csv(out_dir / f"order_head_to_head_{args.metric}.csv", index=False)
-    report = success_report(df, args.metric, matched, cfg["generation"]["steps"])
+    report = success_report(df, args.metric, matched, ref_steps)
     (out_dir / f"success_{args.metric}.md").write_text(report)
 
     print(agg[["setting", "cost", "q", "q_sem", "n"]].to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+    print("\nHow much better the large model is (large - small, full steps):\n", adv.to_string(index=False) if len(adv) else "(none)")
     print("\nWinners per group and budget:\n", win.to_string(index=False) if len(win) else "(none)")
     print("\nOrder head-to-head at equal cost (s2l@f vs l2s@1-f):\n", h2h.to_string(index=False) if len(h2h) else "(none)")
     print("\n" + report)
     print("Summary")
-    print(f"  overall chart:   {p1}")
-    print(f"  per-group chart: {p2}")
-    print(f"  tables:          {out_dir}/winners_*.csv, matched_cost_*.csv, success_*.md")
+    print(f"  main chart:      {pt1}")
+    print(f"  per-group:       {pt2}")
+    print(f"  heatmap:         {ph}")
+    print(f"  raw charts:      {p1}, {p2}")
+    print(f"  tables:          {out_dir}/tradeoff_*.csv, advantage_*.md, heatmap_*.csv, winners_*.csv, matched_cost_*.csv, success_*.md")
 
 
 if __name__ == "__main__":

@@ -141,6 +141,16 @@ class ModelBank:
     def param_counts(self) -> dict:
         return {k: sum(p.numel() for p in u.parameters()) / 1e9 for k, u in self.unets.items()}
 
+    def move(self, device: str) -> None:
+        """Move every weight to `device` and back. The website parks the image models
+        on CPU while VQAScore's ~7 GB scorer runs, since both don't fit a 15 GB T4."""
+        import torch
+        self.pipe.to(device)
+        for unet in self.unets.values():
+            unet.to(device)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
     def free(self) -> None:
         """Release GPU memory before loading other models (e.g. SD 1.5 in the notebook)."""
         import torch
