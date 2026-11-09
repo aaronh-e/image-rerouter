@@ -301,9 +301,9 @@ Large@30 (ceiling), small@30 (floor), large@12/18/24 (the line to beat). Re-run 
 ("code", """!python bench/score.py --prompts prompts/pilot.csv
 !python bench/plot.py --metric vqa_score
 !python bench/plot.py --metric pick_score
+from IPython.display import Image, Markdown, display   # each cell imports what it uses, so skipping a cell never breaks it
 display(Image("results/plots/tradeoff_vqa_score.png"))
 display(Image("results/plots/tradeoff_vqa_score_by_group.png"))
-from IPython.display import Markdown
 display(Markdown(open("results/plots/advantage_vqa_score.md").read()))"""),
 ("md", "### Spot check: 10 random images against their scores (the plan's human sanity check)"),
 ("code", """import pandas as pd, matplotlib.pyplot as plt
@@ -326,16 +326,19 @@ Both orders at switch fractions 0.2/0.4/0.6/0.8 (0 and 1 are the controls). Then
 !python bench/plot.py --metric pick_score
 !python bench/plot.py --metric count_match --groups composition
 !python bench/plot.py --metric ocr_match --groups text
+import pandas as pd
+from IPython.display import Image, Markdown, display
 display(Image("results/plots/tradeoff_vqa_score.png"))
 display(Image("results/plots/tradeoff_vqa_score_by_group.png"))
 display(Image("results/plots/heatmap_vqa_score.png"))
-from IPython.display import Markdown
 display(Markdown(open("results/plots/advantage_vqa_score.md").read()))
 display(Markdown(open("results/plots/success_vqa_score.md").read()))
 display(pd.read_csv("results/plots/order_head_to_head_vqa_score.csv"))"""),
 ("md", """### Hands by eye
 OCR and counting are automatic; hand quality is not. Show the hands_faces prompts at the same cost (s2l@0.4 vs l2s@0.6) side by side and tally which looks right."""),
-("code", """df = pd.read_csv("results/results.csv"); df = df[(df.group == "hands_faces") & (df.seed == 42)]
+("code", """import pandas as pd, matplotlib.pyplot as plt
+from PIL import Image as PILImage
+df = pd.read_csv("results/results.csv"); df = df[(df.group == "hands_faces") & (df.seed == 42)]
 a = df[(df.direction == "s2l") & (df.switch_fraction.round(1) == 0.4)].set_index("prompt_id")
 b = df[(df.direction == "l2s") & (df.switch_fraction.round(1) == 0.6)].set_index("prompt_id")
 ids = sorted(set(a.index) & set(b.index))
@@ -354,6 +357,7 @@ except Exception: print("no TYPESAFE_API_KEY secret; only the heuristic baseline
 !cp results/router_eval.md results/router_eval_heuristic.md
 if os.environ.get("TYPESAFE_API_KEY"):
     !python bench/decider_eval.py --prompts prompts/pilot.csv --provider typesafe
+from IPython.display import Markdown, display
 display(Markdown(open("results/router_eval.md").read()))"""),
 ("code", """# Optional: actually generate the routed images (adds Jev latency to wall clock, logged in notes) and put the router on the chart.
 # !python bench/run.py --method router --policy results/decider_policy.json --prompts prompts/pilot.csv
