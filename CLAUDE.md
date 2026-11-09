@@ -8,7 +8,9 @@ the benchmark scripts (Levels 2-4) have not run on a GPU yet.
 ## State of play
 - Level 1's VAE question is answered analytically (docs/compat_report.md): SSD-1B ships
   the sdxl-vae-fp16-fix VAE, so SDXL and SSD-1B share one latent space.
-- 58 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
+- 65 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
+- Plots and decider_eval compute cost from step counts (config.yaml compute.step_seconds),
+  not the stopwatch: Colab T4 speed varies ~20% between sessions. Why: docs/NOTES.md.
 - The website (app/app.py) has optional quality checks that reuse bench/score.py's Scorers
   (VQAScore, PickScore, CLIPScore, OCR, count) plus a $/1000 column; scores go to results/app/scores.csv.
   Its GenEval tab runs GenEval prompts with GenEval's rules (OWLv2 + CLIP, not the official detector).

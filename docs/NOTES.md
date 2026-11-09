@@ -133,6 +133,15 @@ policy table would memorize noise. The regex baseline (`--provider heuristic`) a
 (prompt_id, seed, method, direction, switch_fraction, steps). Error rows stay in the
 file as a record and are retried on the next run.
 
+**Cost comes from step counts, not the stopwatch (changed 2026-11-08).** The pilot's
+large@30 rows for composition, text and hands_faces ran in Colab sessions whose T4 was
+12-19% slower than the session that ran every other control, so those groups showed
+~10 points too much "cost saved" (e.g. large@24: 31% shown, 19% real). `bench/plot.py`
+now computes `gpu_seconds = fixed + n_steps x seconds-per-step` per model from
+`config.yaml` (`compute.step_seconds`, fitted on one session; max error 0.15 s over 527
+images) and keeps the stopwatch as `measured_seconds`. results.csv itself is unchanged.
+Re-fit the numbers if the GPU type changes.
+
 ## 3. What results would mean
 
 - **Method 1 (small first) hurts composition** → `count_match` on composition drops as

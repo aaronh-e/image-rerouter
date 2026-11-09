@@ -137,7 +137,7 @@ def main(argv=None):
     tol = args.tol if args.tol is not None else DEFAULT_TOL.get(args.metric, 0.1)
     res_dir = Path(cfg["paths"]["results_csv"]).parent
     prompts = utils.read_prompts(args.prompts)
-    df = load_results(args.results or cfg["paths"]["results_csv"])
+    df = load_results(args.results or cfg["paths"]["results_csv"], cfg["compute"])
     df = df[df.prompt_id.isin({p["id"] for p in prompts})]
     # rows from `run.py --method router` replay an earlier policy; learning from them is circular
     df = df[df.method != "router"]

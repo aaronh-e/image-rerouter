@@ -40,6 +40,12 @@ compute:
   usd_per_hour: 0.35        # Colab Pro T4 ~ $0.35/h equivalent; edit to match your provider
   attention_slicing: false  # turn on if you hit OOM at 1024x1024 on a 15 GB T4
   vae_slicing: true
+  # Cost per image comes from step counts, not the stopwatch (bench/plot.py step_cost).
+  # Colab hands out T4s whose speed differs ~20% between sessions, so wall-clock time
+  # mixes GPU luck into cost whenever settings run in different sessions.
+  # Fitted on one T4 session (2026-11-07, 527 control images, max error 0.15 s).
+  step_seconds: {large: 0.810, small: 0.517}
+  fixed_seconds: 0.87       # per image: prompt encoding + VAE decode
 
 scoring:
   pick_score: true          # PickScore_v1 human-preference score (replaced ImageReward, see docs/NOTES.md)

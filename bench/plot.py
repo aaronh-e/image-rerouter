@@ -48,15 +48,31 @@ DIVERGING = ("#e34948", "#f0efec", "#2a78d6")
 
 # --------------------------------------------------------------- loading ----
 
-def load_results(path: str) -> pd.DataFrame:
+def load_results(path: str, compute_cfg: dict | None = None) -> pd.DataFrame:
+    """Read results.csv. `gpu_seconds` is replaced by the step-count cost (see step_cost);
+    the stopwatch reading is kept as `measured_seconds`."""
     df = pd.read_csv(path, dtype={"prompt_id": str})
     df = df[~df["notes"].astype(str).str.startswith("error")].copy()
-    for c in ("gpu_seconds", "switch_fraction", "steps", "seed", *HIGHER_IS_BETTER):
+    for c in ("gpu_seconds", "switch_fraction", "steps", "n_first_steps", "seed", *HIGHER_IS_BETTER):
         if c in df:
             df[c] = pd.to_numeric(df[c], errors="coerce")
+    df["measured_seconds"] = df["gpu_seconds"]
+    df["gpu_seconds"] = step_cost(df, compute_cfg or utils.load_config()["compute"])
     df["setting"] = df.apply(setting_label, axis=1)
     df["family"] = np.where(df["method"] == "control", "control", np.where(df["method"] == "router", "router", df["direction"]))
     return df
+
+
+def step_cost(df: pd.DataFrame, compute_cfg: dict) -> pd.Series:
+    """GPU-seconds per image from step counts: fixed + steps x seconds-per-step of each model.
+    Why not the stopwatch: Colab T4s differ ~20% in speed between sessions, and a
+    setting's rows can land in a different session than the control they're compared with."""
+    sec = compute_cfg["step_seconds"]
+    missing = (set(df["first_model"]) | set(df["second_model"])) - set(sec)
+    if missing:
+        raise ValueError(f"config.yaml compute.step_seconds has no entry for {sorted(missing)}")
+    n_second = df["steps"] - df["n_first_steps"]
+    return compute_cfg["fixed_seconds"] + df["n_first_steps"] * df["first_model"].map(sec) + n_second * df["second_model"].map(sec)
 
 
 def setting_label(r) -> str:
@@ -92,7 +108,7 @@ def _style(ax, metric):
     ax.grid(True, color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.tick_params(colors=MUTED, labelsize=9)
-    ax.set_xlabel("GPU-seconds per image (lower is cheaper)", color=MUTED, fontsize=9)
+    ax.set_xlabel("GPU-seconds per image, from step counts (lower is cheaper)", color=MUTED, fontsize=9)
     ax.set_ylabel(metric.replace("_", " "), color=MUTED, fontsize=9)
 
 
@@ -461,7 +477,7 @@ def main(argv=None):
     cfg = utils.load_config(args.config)
     out_dir = Path(args.out or cfg["paths"]["plots_dir"]); out_dir.mkdir(parents=True, exist_ok=True)
 
-    df = load_results(args.results or cfg["paths"]["results_csv"])
+    df = load_results(args.results or cfg["paths"]["results_csv"], cfg["compute"])
     if args.groups:
         df = df[df["group"].isin(args.groups)]
     if df[args.metric].notna().sum() == 0:
