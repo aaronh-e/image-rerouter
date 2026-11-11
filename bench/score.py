@@ -168,6 +168,14 @@ def geneval_judge(meta: dict, objects: dict, color_of) -> tuple[bool, str]:
 
 # --------------------------------------------------------------- scorers ----
 
+def owl_post_process(proc, out, threshold: float, target_sizes) -> dict:
+    """Boxes and scores for one image. transformers 5 removed
+    Owlv2Processor.post_process_object_detection (it raised AttributeError, so the
+    counter switched itself off and count_match came back empty); the image
+    processor has had the method since 4.x, so call it there."""
+    return proc.image_processor.post_process_object_detection(out, threshold=threshold, target_sizes=target_sizes)[0]
+
+
 class Scorers:
     """Lazy wrappers so a missing package only disables that one metric."""
 
@@ -345,8 +353,7 @@ class Scorers:
             out = model(**inputs)
         # OWLv2 pads to square; target size is the padded square side.
         side = max(img.size)
-        res = proc.post_process_object_detection(out, threshold=self.cfg["scoring"]["owlv2_threshold"],
-                                                 target_sizes=torch.tensor([[side, side]]).to(dev))[0]
+        res = owl_post_process(proc, out, self.cfg["scoring"]["owlv2_threshold"], torch.tensor([[side, side]]).to(dev))
         boxes, scores = res["boxes"].tolist(), res["scores"].tolist()
         return [boxes[i] for i in nms_keep(boxes, scores, self.cfg["scoring"].get("owlv2_nms_iou", 0.5))]
 
