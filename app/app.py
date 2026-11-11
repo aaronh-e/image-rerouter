@@ -78,9 +78,11 @@ def gen(bank, prompt, seed, direction, switch, steps, cfg):
     return generate(bank, prompt, seed, direction, switch, steps, cfg)
 
 
-def usd_per_1000(secs: float) -> float:
-    """Same formula as bench/run.py: gpu_seconds x hourly price / 3600 x 1000."""
-    return round(secs * float(BASE_CFG["compute"]["usd_per_hour"]) / 3600 * 1000, 3)
+def usd_per_1000(secs: float, gpu_name: str) -> float | str:
+    """Same formula as bench/run.py: gpu_seconds x hourly price / 3600 x 1000. Blank
+    when config.yaml has no price for this GPU, rather than a T4's price."""
+    price = utils.usd_per_hour(BASE_CFG, gpu_name)
+    return "" if price is None else round(secs * price / 3600 * 1000, 3)
 
 
 NUMBER_WORDS = {w: i for i, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
@@ -238,7 +240,7 @@ def run_single(prompt, seed, steps, size, guidance, methods, switch,
         res = gen(bank, prompt, seed, d, f, steps, cfg)
         name = save(res.image, prompt, seed, d, f, steps, res)
         gallery.append((res.image, f"{label}  |  {res.gpu_seconds:.1f} s  |  {res.plan}"))
-        rows.append([label, res.plan, round(res.gpu_seconds, 2), round(res.peak_mem_gb, 2), usd_per_1000(res.gpu_seconds), name])
+        rows.append([label, res.plan, round(res.gpu_seconds, 2), round(res.peak_mem_gb, 2), usd_per_1000(res.gpu_seconds, bank.gpu_name), name])
     scores = (score_all([r[5] for r in rows], prompt, expected_text, count_object, count_n, progress, [r[0] for r in rows])
               if score else [[""] * len(SCORE_HEADERS)] * len(rows))
     base = next((r[2] for r in rows if r[0] == "Large model only"), None)
@@ -279,7 +281,7 @@ def run_sweep(prompt, seed, steps, size, guidance, fractions, both,
         names.append(save(res.image, prompt, seed, d, f, steps, res))
         label = {"large": "large only", "small": "small only"}.get(d, f"{d} @ {f:.2f}")
         gallery.append((res.image, f"{label}  |  {res.gpu_seconds:.1f} s"))
-        rows.append([label, res.plan, round(res.gpu_seconds, 2), round(res.peak_mem_gb, 2), usd_per_1000(res.gpu_seconds)])
+        rows.append([label, res.plan, round(res.gpu_seconds, 2), round(res.peak_mem_gb, 2), usd_per_1000(res.gpu_seconds, bank.gpu_name)])
     scores = (score_all(names, prompt, expected_text, count_object, count_n, progress, [r[0] for r in rows])
               if score else [[""] * len(SCORE_HEADERS)] * len(rows))
     base = rows[0][2]
@@ -324,17 +326,17 @@ def run_geneval(seed, steps, size, guidance, methods, switch, per_task, progress
             verdict = "unavailable" if ok is None else "pass" if ok else "fail"
             gallery.append((res.image, f"{verdict}  |  {label}  |  {meta['prompt']}"))
             rows.append([meta["tag"], meta["prompt"], label, round(res.gpu_seconds, 2), round(res.peak_mem_gb, 2),
-                         usd_per_1000(res.gpu_seconds), verdict, why])
+                         usd_per_1000(res.gpu_seconds, bank.gpu_name), verdict, why])
             append_row(OUT / "geneval.csv", ["image", "task", "prompt", "run", "gpu_seconds", "peak_mem_gb", "result", "reason"],
                        [name, meta["tag"], meta["prompt"], label, f"{res.gpu_seconds:.2f}", f"{res.peak_mem_gb:.2f}", verdict, why])
     finally:
         STATE["scorers"].park()
-    return gallery, geneval_summary(rows, [r[0] for r in runs]), rows, (
+    return gallery, geneval_summary(rows, [r[0] for r in runs], bank.gpu_name), rows, (
         f"{len(rows)} images; per-image results in {OUT}/geneval.csv."
         + (" DEMO MODE: noise images, random pass/fail." if STATE["demo"] else "") + scorer_note())
 
 
-def geneval_summary(rows, labels):
+def geneval_summary(rows, labels, gpu_name):
     """One row per method: cost, then GenEval score = mean of the per-task pass rates
     (GenEval's own overall number), then each task's pass rate."""
     out = []
@@ -347,7 +349,7 @@ def geneval_summary(rows, labels):
             got = [r[6] == "pass" for r in mine if r[0] == t]
             if got:
                 rates[t] = sum(got) / len(got)
-        out.append([label, len(allmine), round(secs, 2), max(r[4] for r in allmine), usd_per_1000(secs),
+        out.append([label, len(allmine), round(secs, 2), max(r[4] for r in allmine), usd_per_1000(secs, gpu_name),
                     round(sum(rates.values()) / len(rates), 3) if rates else "unavailable",
                     *[f"{rates[t]:.0%}" if t in rates else "" for t in GENEVAL_TASKS]])
     base = next((r[2] for r in out if r[0] == "Large model only"), None)

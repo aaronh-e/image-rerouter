@@ -37,15 +37,24 @@ handoff:
 
 compute:
   gpu_type: "T4"            # overwritten at runtime by torch.cuda.get_device_name()
-  usd_per_hour: 0.35        # Colab Pro T4 ~ $0.35/h equivalent; edit to match your provider
+  # $ per GPU-hour, by the GPU name torch reports (logged as gpu_type). A GPU not listed
+  # gets blank dollar columns rather than a T4's price. In Colab, set USD_PER_HOUR in the
+  # bench notebook instead: it overrides this table for that run (env RR_USD_PER_HOUR).
+  usd_per_hour:
+    Tesla T4: 0.35          # Colab Pro T4 ~ $0.35/h equivalent; edit to match your provider
+    dry-run: 0.35           # the fake GPU of --dry-run and app --demo, so they show a price
   attention_slicing: false  # turn on if you hit OOM at 1024x1024 on a 15 GB T4
   vae_slicing: true
-  # Cost per image comes from step counts, not the stopwatch (bench/plot.py step_cost).
-  # Colab hands out T4s whose speed differs ~20% between sessions, so wall-clock time
+  # Cost per image comes from step counts, not the stopwatch (bench/plot.py step_cost):
+  # Colab hands out GPUs whose speed differs ~20% between sessions, so wall-clock time
   # mixes GPU luck into cost whenever settings run in different sessions.
-  # Fitted on one T4 session (2026-11-07, 527 control images, max error 0.15 s).
-  step_seconds: {large: 0.810, small: 0.517}
-  fixed_seconds: 0.87       # per image: prompt encoding + VAE decode
+  # Seconds per denoising step for each model plus a fixed per-image part (prompt
+  # encoding + VAE decode), by GPU name. Each GPU's speed ratios differ, so % saved does
+  # too. A GPU not listed is fitted from its own results' control rows (plot.py prints it).
+  step_seconds:
+    Tesla T4: {large: 0.810, small: 0.517, fixed: 0.87}           # 2026-11-07, one session, 527 images, max error 0.15 s
+    NVIDIA RTX PRO 6000 Blackwell Server Edition: {large: 0.05898, small: 0.03811, fixed: 0.1255}  # 2026-11-09, 590 images, max error 0.005 s
+    dry-run: {large: 0.80, small: 0.45, tiny: 0.30, fixed: 0.9}   # the fake timings of bench/run.py --dry-run
 
 scoring:
   pick_score: true          # PickScore_v1 human-preference score (replaced ImageReward, see docs/NOTES.md)

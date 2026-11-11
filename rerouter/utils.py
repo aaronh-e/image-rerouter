@@ -48,6 +48,17 @@ def git_commit() -> str:
         return source_fingerprint()
 
 
+def usd_per_hour(cfg: dict, gpu_name: str) -> float | None:
+    """Hourly price for this GPU: $RR_USD_PER_HOUR if set (the Colab bench notebook sets
+    it from USD_PER_HOUR), else compute.usd_per_hour[gpu_name] from config.yaml, else
+    None. No price beats a wrong one: a T4's price on a Blackwell understates the cost."""
+    env = os.environ.get("RR_USD_PER_HOUR")
+    if env:
+        return float(env)
+    price = (cfg["compute"].get("usd_per_hour") or {}).get(gpu_name)
+    return None if price is None else float(price)
+
+
 def source_fingerprint() -> str:
     """'src-' + 10 hex digits of the code and config that produce results. Line
     endings are normalised so a Windows-made zip and a Linux checkout agree."""

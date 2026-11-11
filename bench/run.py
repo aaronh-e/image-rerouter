@@ -148,7 +148,10 @@ def main(argv=None):
         generate = lambda *a: _generate(bank, *a)  # noqa: E731
 
     commit = utils.git_commit()
-    usd_per_hour = float(cfg["compute"]["usd_per_hour"])
+    usd_per_hour = utils.usd_per_hour(cfg, bank.gpu_name)
+    if usd_per_hour is None:
+        print(f"[warn] no $/hour for GPU '{bank.gpu_name}': usd_per_1000 stays blank. "
+              "Set USD_PER_HOUR in the notebook, or add the GPU to compute.usd_per_hour in config.yaml.")
     n_ok = n_err = 0
     t_start = time.time()
     for k, j in enumerate(todo, 1):
@@ -165,7 +168,8 @@ def main(argv=None):
             row.update(res.as_row())
             row["gpu_seconds"] = f"{res.gpu_seconds:.3f}"
             row["peak_mem_gb"] = f"{res.peak_mem_gb:.2f}"
-            row["usd_per_1000"] = f"{res.gpu_seconds * usd_per_hour / 3600 * 1000:.4f}"
+            if usd_per_hour is not None:
+                row["usd_per_1000"] = f"{res.gpu_seconds * usd_per_hour / 3600 * 1000:.4f}"
             n_ok += 1
             print(f"[{k}/{len(todo)}] {p['id']} s{j['seed']} {res.plan:28s} {res.gpu_seconds:6.2f}s {res.peak_mem_gb:5.2f}GB")
         except Exception as e:  # log, don't crash the whole run

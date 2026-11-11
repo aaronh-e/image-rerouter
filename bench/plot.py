@@ -57,6 +57,9 @@ def load_results(path: str, compute_cfg: dict | None = None) -> pd.DataFrame:
         if c in df:
             df[c] = pd.to_numeric(df[c], errors="coerce")
     df["measured_seconds"] = df["gpu_seconds"]
+    gpus = sorted(df["gpu_type"].astype(str).unique())
+    if len(gpus) > 1:
+        print(f"  [warn] {path} mixes GPUs {gpus}: compare settings within one GPU, not across them")
     df["gpu_seconds"] = step_cost(df, compute_cfg or utils.load_config()["compute"])
     df["setting"] = df.apply(setting_label, axis=1)
     df["family"] = np.where(df["method"] == "control", "control", np.where(df["method"] == "router", "router", df["direction"]))
@@ -64,15 +67,39 @@ def load_results(path: str, compute_cfg: dict | None = None) -> pd.DataFrame:
 
 
 def step_cost(df: pd.DataFrame, compute_cfg: dict) -> pd.Series:
-    """GPU-seconds per image from step counts: fixed + steps x seconds-per-step of each model.
-    Why not the stopwatch: Colab T4s differ ~20% in speed between sessions, and a
-    setting's rows can land in a different session than the control they're compared with."""
-    sec = compute_cfg["step_seconds"]
-    missing = (set(df["first_model"]) | set(df["second_model"])) - set(sec)
-    if missing:
-        raise ValueError(f"config.yaml compute.step_seconds has no entry for {sorted(missing)}")
-    n_second = df["steps"] - df["n_first_steps"]
-    return compute_cfg["fixed_seconds"] + df["n_first_steps"] * df["first_model"].map(sec) + n_second * df["second_model"].map(sec)
+    """GPU-seconds per image from step counts: fixed + steps x seconds-per-step of each model,
+    using the row's own GPU (compute.step_seconds[gpu_type]). Why not the stopwatch: Colab
+    GPUs differ ~20% in speed between sessions, and a setting's rows can land in a different
+    session than the control they're compared with. Why per GPU: the small/large speed
+    ratio differs by GPU, and with it the % saved."""
+    table = compute_cfg["step_seconds"]
+    cost = pd.Series(np.nan, index=df.index)
+    for gpu, rows in df.groupby(df["gpu_type"].astype(str)):
+        sec = table.get(gpu)
+        if sec is None:
+            sec = fit_step_seconds(rows)
+            print(f"  [note] no compute.step_seconds for '{gpu}' in config.yaml; fitted from these results' "
+                  f"controls: {sec}. Add it to config.yaml to pin it (fit on a one-session run).")
+        missing = (set(rows["first_model"]) | set(rows["second_model"])) - set(sec)
+        if missing:
+            raise ValueError(f"config.yaml compute.step_seconds['{gpu}'] has no entry for {sorted(missing)}")
+        n_second = rows["steps"] - rows["n_first_steps"]
+        cost[rows.index] = sec["fixed"] + rows["n_first_steps"] * rows["first_model"].map(sec) + n_second * rows["second_model"].map(sec)
+    return cost
+
+
+def fit_step_seconds(df: pd.DataFrame) -> dict:
+    """Seconds per step for each model plus a fixed per-image part, least squares on the
+    control rows' stopwatch times (controls run one model, so they separate cleanly)."""
+    c = df[df["method"] == "control"]
+    combos = c[["first_model", "steps"]].drop_duplicates()
+    models = sorted(c["first_model"].unique())
+    if len(combos) < len(models) + 1:
+        raise ValueError(f"can't fit step times for GPU '{df['gpu_type'].iloc[0]}': need controls at more step "
+                         "counts; add it to compute.step_seconds in config.yaml")
+    X = np.column_stack([np.ones(len(c))] + [np.where(c["first_model"] == m, c["steps"], 0) for m in models])
+    coef = np.linalg.lstsq(X, c["measured_seconds"].to_numpy(dtype=float), rcond=None)[0]
+    return {"fixed": round(float(coef[0]), 4), **{m: round(float(v), 5) for m, v in zip(models, coef[1:])}}
 
 
 def setting_label(r) -> str:

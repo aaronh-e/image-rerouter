@@ -8,9 +8,13 @@ the benchmark scripts (Levels 2-4) have not run on a GPU yet.
 ## State of play
 - Level 1's VAE question is answered analytically (docs/compat_report.md): SSD-1B ships
   the sdxl-vae-fp16-fix VAE, so SDXL and SSD-1B share one latent space.
-- 65 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
-- Plots and decider_eval compute cost from step counts (config.yaml compute.step_seconds),
-  not the stopwatch: Colab T4 speed varies ~20% between sessions. Why: docs/NOTES.md.
+- 69 CPU tests pass: `python -m pytest -q tests` (uses --dry-run fakes, no GPU).
+- Plots and decider_eval compute cost from step counts (config.yaml compute.step_seconds,
+  per GPU name; an unlisted GPU is fitted from its own controls), not the stopwatch: Colab
+  speed varies ~20% between sessions. Prices are per GPU too (compute.usd_per_hour, or
+  RR_USD_PER_HOUR from the notebook); an unpriced GPU gets blank dollars. Why: docs/NOTES.md.
+- The OWLv2 counter calls proc.image_processor.post_process_object_detection: transformers 5
+  removed the processor-level method, which silently disabled count_match (empty in both pilot runs).
 - The website (app/app.py) has optional quality checks that reuse bench/score.py's Scorers
   (VQAScore, PickScore, CLIPScore, OCR, count) plus a $/1000 column; scores go to results/app/scores.csv.
   Its GenEval tab runs GenEval prompts with GenEval's rules (OWLv2 + CLIP, not the official detector).

@@ -142,6 +142,21 @@ now computes `gpu_seconds = fixed + n_steps x seconds-per-step` per model from
 images) and keeps the stopwatch as `measured_seconds`. results.csv itself is unchanged.
 Re-fit the numbers if the GPU type changes.
 
+**Per-GPU step times and prices (changed 2026-11-10).** A second pilot run on an RTX PRO
+6000 Blackwell (one session, 1,560 images) showed handoffs cost exactly what the step
+formula predicts (within 0.2%), and that the small/large speed ratio differs a little by
+GPU (0.646 vs 0.638 on a T4), so % saved differs by 1-2 points. `compute.step_seconds` is
+now keyed by GPU name; a GPU not listed is fitted from its results' control rows and
+plot.py prints the fit. `compute.usd_per_hour` is keyed the same way, overridable with
+RR_USD_PER_HOUR (the bench notebook's USD_PER_HOUR); an unpriced GPU gets blank dollar
+columns, because the old single T4 price understated a Blackwell's cost.
+
+**Counting was silently off in both pilot runs.** transformers 5 removed
+`Owlv2Processor.post_process_object_detection`; the counter caught the AttributeError and
+disabled itself, so count_match is empty. Fixed by calling the image processor's method
+(present in 4.x and 5.x). OWLv2 still miscounts: on 20 pilot images it overcounted a single
+fire hydrant (3) and balloons (8 for ~5), so spot-check counts or use --manual.
+
 ## 3. What results would mean
 
 - **Method 1 (small first) hurts composition** → `count_match` on composition drops as

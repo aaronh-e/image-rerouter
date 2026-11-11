@@ -282,10 +282,19 @@ if IN_COLAB:
     !pip install -q -r requirements.txt
     !pip uninstall -q -y torchao   # Colab's preinstalled torchao is too old for new diffusers (FqnToConfig import error); unused here
 import torch; print(torch.cuda.get_device_name(0))"""),
-("code", """# GPU-seconds convert to dollars with compute.usd_per_hour in config.yaml: edit it there for your provider.
-# (Rewriting config.yaml from here would strip its comments.) The GPU name is logged in every row automatically.
-import yaml
-print("GPU:", torch.cuda.get_device_name(0), "| price used for $/1000 images:", yaml.safe_load(open("config.yaml"))["compute"]["usd_per_hour"], "$/h")
+("code", """# Dollar columns: $ per hour for the GPU this runtime got. Set USD_PER_HOUR to your price for it
+# (Colab bills compute units: units per hour x $ per unit). None = use config.yaml's table, which
+# only lists a T4; any other GPU then gets blank dollar columns instead of a T4's price.
+USD_PER_HOUR = None
+import os, torch
+from rerouter import utils
+if USD_PER_HOUR:
+    os.environ["RR_USD_PER_HOUR"] = str(USD_PER_HOUR)   # bench/run.py reads it; no need to edit config.yaml
+GPU = torch.cuda.get_device_name(0)
+price = utils.usd_per_hour(utils.load_config(), GPU)
+print("GPU:", GPU, "| price for $/1000 images:", f"${price}/h" if price else "none: dollar column stays blank (set USD_PER_HOUR above)")
+cfg_steps = utils.load_config()["compute"]["step_seconds"]
+print("% saved uses", "this GPU's measured step times" if GPU in cfg_steps else "step times fitted from this run's controls (plot.py prints them)")
 # Hugging Face token (optional but avoids throttled downloads): Colab > Secrets > HF_TOKEN
 try:
     from google.colab import userdata; os.environ["HF_TOKEN"] = userdata.get("HF_TOKEN")
