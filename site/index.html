@@ -6,8 +6,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: a lab report you can operate. A reading column for the story, wide bands for the image explorer and the charts.
-   Identity: the two models own the two hues (large = blue, small = orange); controls are neutral grey. */
+/* Layout: the interesting part first. Pictures, then four plain findings, a short explanation, the image explorer, the charts.
+   Identity: the two models own the two hues (large = blue, small = orange); the comparison baselines are neutral grey. */
 :root {
   --bg: #f4f5f7; --surface: #ffffff; --surface-2: #eceef2; --ink: #10151e; --ink-2: #465061; --muted: #6b7484;
   --line: #e0e3e9; --line-2: #c6ccd6; --large: #2a78d6; --small: #eb6834; --control: #7a828f; --fixed: #b9bec8;
@@ -38,14 +38,13 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 700; }
 h3 { font-size: 1.15rem; font-weight: 700; }
 p { margin: 0; }
 a { color: var(--large); }
-.eyebrow { font-family: var(--font-mono); font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.lede { font-size: 1.12rem; color: var(--ink-2); max-width: 62ch; }
-.prose { max-width: 66ch; color: var(--ink-2); display: grid; gap: 12px; }
-.num { font-variant-numeric: tabular-nums; }
+.lede { font-size: 1.12rem; color: var(--ink-2); max-width: 60ch; }
+.prose { max-width: 62ch; color: var(--ink-2); display: grid; gap: 10px; font-size: 1.05rem; }
 button, select, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--large); outline-offset: 2px; }
 section { padding-block: 56px; }
-.section-head { display: grid; gap: 10px; margin-bottom: 28px; }
+.section-head { display: grid; gap: 12px; margin-bottom: 26px; }
+.band { background: var(--surface); border-block: 1px solid var(--line); }
 
 /* top bar */
 .top { border-bottom: 1px solid var(--line); background: var(--surface); }
@@ -58,82 +57,59 @@ section { padding-block: 56px; }
 .top nav a:hover { color: var(--ink); text-decoration: underline; }
 
 /* hero */
-.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; }
-.hero-copy { display: grid; gap: 18px; min-width: 0; }
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
-.stat { border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 4px; align-content: start; }
-.stat b { font-family: var(--font-display); font-size: 1.9rem; line-height: 1; }
-.stat span { font-size: .86rem; color: var(--ink-2); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; align-items: center; }
+.hero-copy { display: grid; gap: 20px; min-width: 0; }
+.cta { justify-self: start; background: var(--ink); color: var(--bg); text-decoration: none; padding: 11px 18px; border-radius: 10px; font-weight: 600; }
+.cta:hover { opacity: .9; }
+.hero-prompt { font-family: var(--font-display); font-size: 1.1rem; font-weight: 500; margin-bottom: 12px; }
 .duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .duo .card { padding: 10px; display: grid; gap: 10px; min-width: 0; }
 .img { aspect-ratio: 1; width: 100%; border-radius: 8px; background-color: var(--surface-2); background-repeat: no-repeat; transition: opacity .2s; }
 .img.loading { opacity: .45; }
-.cap { display: grid; gap: 6px; font-size: .86rem; }
+.cap { display: grid; gap: 6px; font-size: .92rem; }
 .cap b { font-weight: 600; }
-.cap .sub { color: var(--muted); font-size: .8rem; }
-.figcap { font-size: .86rem; color: var(--muted); margin-top: 12px; }
+.cap span { color: var(--ink-2); }
 
-/* step rails: one block per denoising step, width = GPU time of that step */
+/* step bars: one block per denoising step, width = GPU time of that step; the grey end is prompt reading + decoding */
 .rail { display: flex; height: 10px; width: 100%; }
 .rail i { display: block; height: 100%; margin-right: 1px; border-radius: 1.5px; flex: 0 0 auto; }
 .rail i.large { background: var(--large); } .rail i.small { background: var(--small); } .rail i.fixed { background: var(--fixed); }
 .rail.tall { height: 16px; }
 .rail.thin { height: 6px; }
-.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .84rem; color: var(--ink-2); align-items: center; }
-.key span { display: inline-flex; align-items: center; gap: 6px; }
-.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -1px; }
 .sw.large { background: var(--large); } .sw.small { background: var(--small); } .sw.fixed { background: var(--fixed); } .sw.control { background: var(--control); }
 
 /* findings */
-.band { background: var(--surface); border-block: 1px solid var(--line); }
-.findings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.finding { border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 10px; align-content: start; background: var(--bg); }
-.finding .big { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; line-height: 1.1; }
-.finding p { color: var(--ink-2); font-size: .95rem; }
-.verdict { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; width: fit-content; }
-.verdict.better { color: var(--good); background: var(--good-bg); }
-.verdict.worse { color: var(--bad); background: var(--bad-bg); }
-.verdict.same { color: var(--ink-2); background: var(--surface-2); }
+.findings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
+.findings li { border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 8px; align-content: start; background: var(--bg); }
+.findings b { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.2; }
+.findings p { color: var(--ink-2); }
 
 /* how it works */
-.models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 26px 0; }
-.model { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; padding: 18px; }
-.model .chip { width: 14px; height: 44px; border-radius: 4px; }
-.model h3 { margin-bottom: 4px; }
-.model p { color: var(--ink-2); font-size: .92rem; }
-.families { display: grid; gap: 0; border-top: 1px solid var(--line); }
-.family { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--line); align-items: center; }
-.family .who { display: grid; gap: 4px; }
-.family .who .tag { font-family: var(--font-mono); font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; }
-.family .who p { color: var(--ink-2); font-size: .92rem; }
-.rails { display: grid; gap: 8px; }
-.railrow { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 4.2rem; gap: 10px; align-items: center; font-size: .82rem; }
-.railrow .lbl { color: var(--ink-2); }
-.railrow .pct { text-align: right; color: var(--muted); font-family: var(--font-mono); font-size: .78rem; }
-.layout-demo { margin-top: 30px; display: grid; gap: 14px; }
-.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.trio .card { padding: 10px; display: grid; gap: 10px; min-width: 0; }
+.how { display: grid; gap: 14px; margin-bottom: 40px; }
+.how .example { display: grid; gap: 8px; max-width: 560px; margin-top: 6px; }
+.how .example > div { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 12px; align-items: center; font-size: .92rem; color: var(--ink-2); }
 
 /* explorer */
 .controls { display: grid; gap: 14px; margin-bottom: 18px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip-btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .9rem; }
+.chip-btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .92rem; }
 .chip-btn:hover { border-color: var(--ink-2); }
 .chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .chip-btn:disabled { opacity: .4; cursor: not-allowed; }
 .pick { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .pick select { min-width: 0; flex: 1 1 320px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
-.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
-.seg button { border: 0; background: var(--surface); padding: 8px 12px; cursor: pointer; font-size: .9rem; }
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--surface); padding: 8px 12px; cursor: pointer; font-size: .92rem; }
 .seg button + button { border-left: 1px solid var(--line-2); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.icon-btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: .9rem; }
+.icon-btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: .92rem; }
 .icon-btn:hover { border-color: var(--ink-2); }
-.prompt-box { display: grid; gap: 8px; padding: 18px 20px; border-left: 3px solid var(--ink); background: var(--surface); border-radius: 0 10px 10px 0; }
+.prompt-box { display: grid; gap: 6px; padding: 16px 20px; border-left: 3px solid var(--ink); background: var(--bg); border-radius: 0 10px 10px 0; }
 .prompt-box q { font-family: var(--font-display); font-size: clamp(1.15rem, 2.2vw, 1.5rem); font-weight: 500; line-height: 1.3; quotes: "\201C" "\201D"; }
-.expect { font-size: .86rem; color: var(--ink-2); }
-.expect code { font-family: var(--font-mono); font-size: .84rem; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
+.expect { color: var(--ink-2); }
+.expect code { font-family: var(--font-mono); font-size: .9rem; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
 
 .compare { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; margin: 22px 0 30px; align-items: start; }
 .swipe { position: relative; aspect-ratio: 1; width: 100%; max-width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface-2); --x: 50%; box-shadow: var(--shadow); }
@@ -143,42 +119,37 @@ section { padding-block: 56px; }
 .swipe .knob { position: absolute; top: 50%; left: var(--x); width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; background: var(--on-image); color: #10151e; display: grid; place-items: center; font-size: .8rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.3); pointer-events: none; }
 .swipe input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
 .swipe:focus-within { outline: 2px solid var(--large); outline-offset: 3px; }
-.badge { position: absolute; top: 10px; font-family: var(--font-mono); font-size: .78rem; font-weight: 500; background: rgba(16,21,30,.72); color: #ffffff; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
-.badge.a { left: 10px; } .badge.b { right: 10px; }
+.badge { position: absolute; top: 10px; max-width: 45%; font-size: .82rem; font-weight: 500; background: rgba(16,21,30,.74); color: #ffffff; padding: 3px 9px; border-radius: 6px; pointer-events: none; }
+.badge.a { left: 10px; } .badge.b { right: 10px; text-align: right; }
 .side { display: grid; gap: 14px; min-width: 0; }
-.side .card { padding: 16px; display: grid; gap: 10px; }
+.side .card { padding: 16px; display: grid; gap: 12px; }
 .side .head { display: flex; gap: 10px; align-items: center; }
-.side .letter { font-family: var(--font-mono); font-weight: 500; border: 1px solid var(--line-2); border-radius: 6px; padding: 1px 7px; font-size: .8rem; }
+.side .head span { font-weight: 600; flex: 0 0 auto; }
 .side select { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
-.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: .88rem; margin: 0; }
-.facts dt { color: var(--muted); }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+.facts dt { color: var(--ink-2); }
 .facts dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .delta-up { color: var(--good); } .delta-down { color: var(--bad); }
-.hint { font-size: .86rem; color: var(--muted); }
 
 .board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 4fr); gap: 18px; align-items: start; }
-.board-ref { display: grid; gap: 8px; }
-.board-rows { display: grid; gap: 18px; min-width: 0; }
-.board-row { display: grid; gap: 8px; }
-.row-head { display: flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 600; }
-.row-head .sub { font-weight: 400; color: var(--muted); }
+.board-ref, .board-row { display: grid; gap: 8px; }
+.board-rows { display: grid; gap: 20px; min-width: 0; }
+.row-head { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .tile { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px; display: grid; gap: 7px; cursor: pointer; min-width: 0; transition: border-color .15s, transform .15s; }
 .tile:hover { border-color: var(--line-2); transform: translateY(-1px); }
 .tile[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
 .tile .img { border-radius: 6px; }
-.tile .t-name { font-size: .8rem; font-weight: 600; line-height: 1.25; }
-.tile .t-meta { font-size: .74rem; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.3; }
-.tile .t-meta .delta-up, .tile .t-meta .delta-down { font-weight: 500; }
+.tile .t-name { font-size: .84rem; font-weight: 600; line-height: 1.25; }
+.tile .t-meta { font-size: .8rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 /* charts */
-.filters { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; margin-bottom: 14px; }
-.filters .grp { display: grid; gap: 6px; }
-.filters .grp > span { font-size: .78rem; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: .86rem; color: var(--ink-2); margin: 6px 0 8px; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 12px; }
+.measure { color: var(--ink-2); margin-bottom: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: .9rem; color: var(--ink-2); margin: 4px 0 8px; }
 .legend span { display: inline-flex; align-items: center; gap: 7px; }
 .legend svg { overflow: visible; }
-.chart-card { padding: 18px 18px 12px; }
+.chart-card { padding: 18px 18px 14px; }
 .chart { position: relative; width: 100%; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart text { font-family: var(--font-body); }
@@ -186,12 +157,12 @@ section { padding-block: 56px; }
 .c-zero { stroke: var(--line-2); stroke-width: 1.5; }
 .c-goal { fill: var(--goal); }
 .c-tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.c-title { fill: var(--ink-2); font-size: 11px; font-family: var(--font-mono) !important; letter-spacing: .05em; text-transform: uppercase; }
+.c-title { fill: var(--ink-2); font-size: 12px; font-weight: 600; }
 .c-dir { fill: var(--ink); font-size: 12.5px; font-weight: 600; }
 .c-dir-axis { stroke: var(--ink-2); stroke-width: 1.5; }
 .c-arrowhead { fill: var(--ink-2); }
 .c-note { fill: var(--muted); font-size: 11px; }
-.c-goal-label { fill: var(--good); font-size: 11px; font-weight: 600; }
+.c-goal-label { fill: var(--good); font-size: 11.5px; font-weight: 600; }
 .c-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .c-ci { stroke-width: 1.5; }
 .s-large_first { stroke: var(--large); } .f-large_first { fill: var(--large); }
@@ -204,49 +175,47 @@ section { padding-block: 56px; }
 .hit { fill: transparent; cursor: pointer; }
 .hit:focus { outline: none; }
 .hit:focus-visible { stroke: var(--large); stroke-width: 2; }
-.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; width: 250px; max-width: calc(100% - 8px); font-size: .82rem; display: grid; gap: 7px; }
-.tip b { font-size: .9rem; }
-.tip .fam { color: var(--muted); font-size: .76rem; }
-.tip dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; }
-.tip dt { color: var(--muted); } .tip dd { margin: 0; font-variant-numeric: tabular-nums; }
-.chart-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; margin-top: 8px; }
-.multiples { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; width: 260px; max-width: calc(100% - 8px); font-size: .86rem; display: grid; gap: 8px; }
+.tip b { font-size: .92rem; }
+.tip p { color: var(--ink-2); }
+.verdict { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; width: fit-content; }
+.verdict.better { color: var(--good); background: var(--good-bg); }
+.verdict.worse { color: var(--bad); background: var(--bad-bg); }
+.verdict.same { color: var(--ink-2); background: var(--surface-2); }
+.chart-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.multiples { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
 .multiple { padding: 12px 12px 6px; min-width: 0; }
-.multiple button.mhead { all: unset; cursor: pointer; display: grid; gap: 2px; margin-bottom: 4px; }
+.multiple button.mhead { all: unset; cursor: pointer; font-weight: 600; margin-bottom: 4px; display: inline-block; }
+.multiple button.mhead:hover { text-decoration: underline; }
 .multiple button.mhead:focus-visible { outline: 2px solid var(--large); outline-offset: 3px; border-radius: 4px; }
-.multiple .mhead b { font-size: .95rem; } .multiple .mhead span { font-size: .78rem; color: var(--muted); }
 .multiple[data-active="true"] { border-color: var(--ink); }
 .table-wrap { overflow-x: auto; margin-top: 12px; }
-table { border-collapse: collapse; width: 100%; font-size: .86rem; min-width: 640px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 640px; }
 th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-th { font-weight: 600; color: var(--ink-2); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+th { font-weight: 600; color: var(--ink-2); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td .rail { min-width: 140px; }
 
 /* method */
-.method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 36px; margin-top: 8px; }
+.method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 36px; }
 .method-grid div { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
 .method-grid h3 { font-size: 1rem; }
-.method-grid p { color: var(--ink-2); font-size: .92rem; }
-footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--muted); font-size: .84rem; }
+.method-grid p { color: var(--ink-2); }
+footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--muted); font-size: .9rem; }
 .error { padding: 20px; border: 1px solid var(--bad); color: var(--bad); border-radius: 10px; }
 
 @media (max-width: 900px) {
-  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .compare { grid-template-columns: minmax(0, 1fr); }
   .board { grid-template-columns: minmax(0, 1fr); }
   .board-ref .tile { max-width: 260px; }
   .multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .family { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }
 @media (max-width: 640px) {
   section { padding-block: 40px; }
-  .stats { grid-template-columns: minmax(0, 1fr); }
-  .findings, .models, .method-grid, .multiples { grid-template-columns: minmax(0, 1fr); }
+  .findings, .method-grid, .multiples { grid-template-columns: minmax(0, 1fr); }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .trio { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .trio .cap { font-size: .76rem; }
-  .railrow { grid-template-columns: 6.5rem minmax(0, 1fr) 3.4rem; }
+  .how .example > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -254,7 +223,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
 <header class="top">
   <div class="wrap">
     <div class="mark"><span class="glyph" aria-hidden="true"><i style="background:var(--large)"></i><i style="background:var(--large)"></i><i style="background:var(--small)"></i></span>Image Model Re-Router</div>
-    <nav aria-label="Sections"><a href="#findings">Findings</a><a href="#how">How it works</a><a href="#explore">Explore images</a><a href="#results">Results</a><a href="#method">Method</a></nav>
+    <nav aria-label="Sections"><a href="#findings">Findings</a><a href="#how">How it works</a><a href="#explore">Compare images</a><a href="#results">Charts</a><a href="#method">Method</a></nav>
   </div>
 </header>
 
@@ -262,68 +231,50 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
   <section class="hero">
     <div class="wrap">
       <div class="hero-copy">
-        <p class="eyebrow" id="hero-eyebrow">Pilot results</p>
         <h1>Can a small model finish a big model's image?</h1>
-        <p class="lede">An image model draws by removing noise over 30 steps. We let a large model (SDXL) and a small one (SSD-1B) split those steps, and measured how much GPU time each split saves and what it does to the picture.</p>
-        <div class="stats" id="hero-stats"></div>
+        <p class="lede">An image model paints in 30 steps, starting from noise. We had a big model and a smaller, faster one share those steps to see how much time we could save before the pictures got worse.</p>
+        <a class="cta" href="#explore">Compare the images</a>
       </div>
-      <figure style="margin:0">
+      <div>
+        <p class="hero-prompt" id="hero-prompt"></p>
         <div class="duo" id="hero-duo"></div>
-        <figcaption class="figcap" id="hero-cap"></figcaption>
-      </figure>
+      </div>
     </div>
   </section>
 
   <section class="band" id="findings">
     <div class="wrap">
-      <div class="section-head"><p class="eyebrow">What the pilot shows</p><h2>Four findings</h2></div>
-      <div class="findings" id="findings-list"></div>
+      <div class="section-head"><h2>What we found</h2></div>
+      <ul class="findings" id="findings-list"></ul>
     </div>
   </section>
 
   <section id="how">
     <div class="wrap">
-      <div class="section-head"><p class="eyebrow">How it works</p><h2>Two models, one image, a handoff in the middle</h2></div>
-      <div class="prose">
-        <p>Early denoising steps decide the layout: what goes where. Late steps add detail: texture, edges, lettering. A handoff gives some of those steps to the cheaper model.</p>
-        <p>The two models share the same internal image format, so the second one picks up exactly where the first stopped. No image is decoded or redrawn in between.</p>
+      <div class="how">
+        <h2>How a handoff works</h2>
+        <div class="prose" id="how-text"></div>
+        <div class="example" id="how-example"></div>
       </div>
-      <div class="models" id="models"></div>
-      <div class="key" style="margin-bottom:14px"><span><i class="sw large"></i>Large model step</span><span><i class="sw small"></i>Small model step</span><span><i class="sw fixed"></i>Reading the prompt and decoding the image</span><span>Each block is one step. Its width is how long it takes on the GPU, so a shorter bar costs less.</span></div>
-      <div class="families" id="families"></div>
-      <div class="layout-demo">
-        <h3>The first model decides the layout</h3>
-        <p class="prose" id="layout-text"></p>
-        <div class="trio" id="trio"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="band" id="explore">
-    <div class="wrap">
-      <div class="section-head"><p class="eyebrow">Explore images</p><h2>Every prompt, every handoff</h2>
-        <p class="lede">Pick a prompt, then click any image to compare it with the full large model. Drag across the large image to swipe between the two.</p></div>
+      <div class="section-head" id="explore"><h2>Compare the images</h2>
+        <p class="lede">Pick a prompt, then click any picture to put it next to the big model's. Drag across the large image to swipe between them.</p></div>
       <div class="controls">
-        <div class="chips" id="group-chips" role="group" aria-label="Prompt category"></div>
+        <div class="chips" id="group-chips" role="group" aria-label="Type of prompt"></div>
         <div class="pick">
-          <label class="hint" for="prompt-select" style="flex:0 0 auto">Prompt</label>
-          <select id="prompt-select"></select>
-          <button class="icon-btn" id="prev-prompt" type="button" aria-label="Previous prompt">&#8592; Prev</button>
-          <button class="icon-btn" id="next-prompt" type="button" aria-label="Next prompt">Next &#8594;</button>
-          <span class="seg" role="group" aria-label="Seed" id="seed-seg"></span>
+          <select id="prompt-select" aria-label="Prompt"></select>
+          <button class="icon-btn" id="prev-prompt" type="button">&#8592; Previous</button>
+          <button class="icon-btn" id="next-prompt" type="button">Next &#8594;</button>
+          <span class="seg" role="group" aria-label="Starting noise" id="seed-seg"></span>
         </div>
       </div>
       <div class="prompt-box"><q id="prompt-text"></q><div class="expect" id="prompt-expect"></div></div>
       <div class="compare">
-        <div>
-          <div class="swipe" id="swipe">
-            <div class="layer a img" id="layer-a"></div>
-            <div class="layer b img" id="layer-b"></div>
-            <div class="divider"></div><div class="knob" aria-hidden="true">&#8249; &#8250;</div>
-            <span class="badge a">A</span><span class="badge b">B</span>
-            <input type="range" id="swipe-range" min="0" max="100" value="50" aria-label="Swipe between image A on the left and image B on the right">
-          </div>
-          <p class="hint" style="margin-top:8px">Left of the line is A, right of the line is B.</p>
+        <div class="swipe" id="swipe">
+          <div class="layer a img" id="layer-a"></div>
+          <div class="layer b img" id="layer-b"></div>
+          <div class="divider"></div><div class="knob" aria-hidden="true">&#8249; &#8250;</div>
+          <span class="badge a" id="badge-a"></span><span class="badge b" id="badge-b"></span>
+          <input type="range" id="swipe-range" min="0" max="100" value="50" aria-label="Swipe between the left and right image">
         </div>
         <div class="side">
           <div class="card" id="side-a"></div>
@@ -331,104 +282,100 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
         </div>
       </div>
       <div class="board">
-        <div class="board-ref"><div class="row-head">Reference</div><div id="ref-tile"></div></div>
+        <div class="board-ref"><div class="row-head">Big model only</div><div id="ref-tile"></div></div>
         <div class="board-rows" id="board-rows"></div>
       </div>
     </div>
   </section>
 
-  <section id="results">
+  <section class="band" id="results">
     <div class="wrap">
-      <div class="section-head"><p class="eyebrow">Results</p><h2>What each setting saves, and what it costs in quality</h2>
-        <p class="lede">Every point compares a setting with the full large model on the same prompts and seeds. Up is better quality, right is cheaper. Bars show the 95% range.</p></div>
+      <div class="section-head"><h2>How much quality each saving costs</h2>
+        <p class="lede">Each dot is one setting, compared with the big model on the same prompts. Up means better pictures. Right means cheaper. The bars show the likely range.</p></div>
       <div class="filters">
-        <div class="grp"><span>Quality measure</span><div class="seg" id="metric-seg" role="group" aria-label="Quality measure"></div></div>
-        <div class="grp"><span>Prompts</span><div class="chips" id="cgroup-chips" role="group" aria-label="Prompt category for the chart"></div></div>
+        <div class="seg" id="metric-seg" role="group" aria-label="Quality score"></div>
+        <div class="chips" id="cgroup-chips" role="group" aria-label="Type of prompt"></div>
       </div>
-      <p class="hint" id="metric-blurb"></p>
+      <p class="measure" id="metric-blurb"></p>
       <div class="card chart-card">
         <div class="legend" id="legend"></div>
         <div class="chart" id="main-chart"></div>
-        <div class="chart-foot"><span class="hint" id="chart-note"></span><button class="icon-btn" id="table-toggle" type="button" aria-pressed="false">Show as table</button></div>
+        <div class="chart-foot"><button class="icon-btn" id="table-toggle" type="button" aria-pressed="false">Show the numbers</button></div>
         <div class="table-wrap" id="table-wrap" hidden></div>
       </div>
       <div id="multiples-wrap">
-        <h3 style="margin-top:34px">By prompt category</h3>
-        <p class="hint" style="margin-top:6px">Same chart for each category, 10 prompts each, so the ranges are wider. Click a title to show it above.</p>
+        <h3 style="margin-top:36px">By type of prompt</h3>
+        <p class="measure" style="margin-top:6px">Each type has only 10 prompts, so its ranges are wider.</p>
         <div class="multiples" id="multiples"></div>
       </div>
     </div>
   </section>
 
-  <section class="band" id="method">
+  <section id="method">
     <div class="wrap">
-      <div class="section-head"><p class="eyebrow">Method</p><h2>How this was measured</h2></div>
+      <div class="section-head"><h2>How we measured</h2></div>
       <div class="method-grid" id="method-grid"></div>
     </div>
   </section>
 </main>
-<footer><div class="wrap" id="footer-text">Image Model Re-Router, pilot study.</div></footer>
+<footer><div class="wrap" id="footer-text">Image Model Re-Router, a pilot study.</div></footer>
 
 <script>
 "use strict";
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-let D, S, SEC;                         // data, settings by id, step seconds
+let D, S, SEC;                         // data, settings by id, seconds per step
 const HERO = "l2s@0.4";                // the setting the story leads with
-const st = { group: "composition", prompt: "comp_04", seed: 42, a: "large@30", b: "l2s@0.4", metric: "pick_score", cgroup: "all", table: false };
-const METRIC_FMT = {
-  pick_score: { k: 1, d: 2, axis: "Change in PickScore", unit: "PickScore points" },
-  vqa_score: { k: 100, d: 1, axis: "Change in VQAScore (0-100)", unit: "VQAScore points out of 100" },
-  clip_score: { k: 1, d: 2, axis: "Change in CLIPScore", unit: "CLIPScore points" },
-  ocr_match: { k: 100, d: 0, axis: "Change in text accuracy (pts)", unit: "percentage points of text prompts" },
-};
-const FAMILY = {
-  full: { name: "Full large model", tag: "Reference", blurb: "SDXL runs all 30 steps. Everything is compared with this." },
-  fewer: { name: "Large model, fewer steps", tag: "Control", blurb: "The simplest way to save time: stop the large model early. This is the line to beat." },
-  small: { name: "Small model only", tag: "Control", blurb: "SSD-1B runs all 30 steps. The cheapest way to use the small model." },
-  large_first: { name: "Large first, small finishes", tag: "Method 2", blurb: "SDXL sets the layout, then SSD-1B adds the detail. This is the Hybrid SD order." },
-  small_first: { name: "Small first, large finishes", tag: "Method 1", blurb: "SSD-1B sketches the layout, then SDXL refines it. This is the T-Stitch order." },
+const HERO_PROMPT = "comp_04";
+const st = { group: "composition", prompt: HERO_PROMPT, seed: 42, a: "large@30", b: HERO, metric: "pick_score", cgroup: "all", table: false };
+const METRIC = {
+  pick_score: { k: 1, d: 2, axis: "Change in PickScore", what: "PickScore predicts which image people would prefer." },
+  vqa_score: { k: 100, d: 1, axis: "Change in VQAScore", what: "VQAScore asks a vision model whether the image shows what the prompt describes, on a 0 to 100 scale." },
+  clip_score: { k: 1, d: 2, axis: "Change in CLIPScore", what: "CLIPScore measures how closely the image matches the words of the prompt." },
+  ocr_match: { k: 100, d: 0, axis: "Change in text accuracy (points)", what: "Text accuracy checks whether the words in the text prompts come out right. Only the 10 text prompts count here." },
 };
 const ROWS = [
-  { fam: "fewer", ids: ["large@24", "small@30", "large@18", "large@12"], title: "Controls", sub: "large model with fewer steps, and the small model alone" },
-  { fam: "large_first", ids: ["l2s@0.8", "l2s@0.6", "l2s@0.4", "l2s@0.2"], title: "Method 2: large first, small finishes", sub: "" },
-  { fam: "small_first", ids: ["s2l@0.2", "s2l@0.4", "s2l@0.6", "s2l@0.8"], title: "Method 1: small first, large finishes", sub: "" },
+  { cls: "control", ids: ["large@24", "small@30", "large@18", "large@12"], title: "Big model with fewer steps, or small model alone" },
+  { cls: "large", ids: ["l2s@0.8", "l2s@0.6", "l2s@0.4", "l2s@0.2"], title: "Big model starts, small model finishes" },
+  { cls: "small", ids: ["s2l@0.2", "s2l@0.4", "s2l@0.6", "s2l@0.8"], title: "Small model starts, big model finishes" },
 ];
 
-/* ---------- formatting ---------- */
+/* ---------- words and numbers ---------- */
 function name(id) {
-  const s = S[id], g = s.segments;
-  if (s.family === "full") return "Full large model";
-  if (s.family === "fewer") return `Large model, ${g[0][2]} steps`;
+  const s = S[id], g = s.segments, n = seg => seg[2] - seg[1];
+  if (s.family === "full") return "Big model only";
+  if (s.family === "fewer") return `Big model, ${g[0][2]} steps`;
   if (s.family === "small") return "Small model only";
-  const n = seg => seg[2] - seg[1], cap = m => m === "large" ? "Large" : "Small";
-  return `${cap(g[0][0])} ${n(g[0])} steps, then ${g[1][0]} ${n(g[1])}`;
+  return `${g[0][0] === "large" ? "Big" : "Small"} for ${n(g[0])} steps, then ${g[1][0] === "large" ? "big" : "small"} for ${n(g[1])}`;
+}
+function shortName(id) {
+  const s = S[id], g = s.segments, n = seg => seg[2] - seg[1];
+  if (s.family === "full") return "Big only";
+  if (s.family === "fewer") return `Big, ${g[0][2]} steps`;
+  if (s.family === "small") return "Small only";
+  return `${g[0][0] === "large" ? "Big" : "Small"} ${n(g[0])} + ${g[1][0] === "large" ? "big" : "small"} ${n(g[1])}`;
 }
 const pct = v => `${(v * 100).toFixed(1)}%`;
 const pct0 = v => `${Math.round(v * 100)}%`;
-function fmtD(v, metric, signed = true) {
-  const f = METRIC_FMT[metric], x = v * f.k, s = x.toFixed(f.d);
-  return signed && x > 0 ? `+${s}` : s.replace("-", "−");
-}
+const minus = s => s.replace("-", "−");
+function fmtD(v, metric) { const f = METRIC[metric], x = v * f.k, s = x.toFixed(f.d); return x > 0 ? `+${s}` : minus(s); }
 const fmtRange = (r, m) => `${fmtD(r.lo, m)} to ${fmtD(r.hi, m)}`;
-function verdictOf(r) { return r.lo > 0 ? "better" : r.hi < 0 ? "worse" : "same"; }
-const VERDICT_TEXT = { better: "▲ Measurably better", worse: "▼ Measurably worse", same: "● No measurable change" };
-const verdictHTML = r => `<span class="verdict ${verdictOf(r)}">${VERDICT_TEXT[verdictOf(r)]}</span>`;
-function costSeconds(id) { return S[id].seconds; }
+const verdictOf = r => r.lo > 0 ? "better" : r.hi < 0 ? "worse" : "same";
+const VERDICT = { better: "▲ Clearly better", worse: "▼ Clearly worse", same: "● No clear change" };
+const verdictHTML = r => `<span class="verdict ${verdictOf(r)}">${VERDICT[verdictOf(r)]}</span>`;
+const secs = id => `${S[id].seconds.toFixed(2)} s`;
+const timeText = id => id === "large@30" ? secs(id) : `${secs(id)}, ${pct0(S[id].saved)} less`;
 
-/* ---------- step rail (block width = GPU time of that step) ---------- */
+/* ---------- step bar: one block per step, block width = GPU time of that step ---------- */
 function rail(id, cls = "") {
   const full = D.meta.full_seconds;
   let h = "";
   for (const [m, a, b] of S[id].segments) for (let k = a; k < b; k++) h += `<i class="${m}" style="width:calc(${(SEC[m] / full * 100).toFixed(3)}% - 1px)"></i>`;
   h += `<i class="fixed" style="width:calc(${(SEC.fixed / full * 100).toFixed(3)}% - 1px)"></i>`;
-  return `<div class="rail ${cls}" role="img" aria-label="${esc(name(id))}: ${esc(stepWords(id))}">${h}</div>`;
-}
-function stepWords(id) {
-  return S[id].segments.map(([m, a, b]) => `${b - a} ${m} model step${b - a === 1 ? "" : "s"}`).join(", then ");
+  return `<div class="rail ${cls}" role="img" aria-label="${esc(name(id))}">${h}</div>`;
 }
 
-/* ---------- sprites: one strip of 13 tiles per (prompt, seed) ---------- */
+/* ---------- images: one strip of 13 tiles per (prompt, seed) ---------- */
 const spriteKey = (p, s) => `${p}_s${s}`;
 const loaded = new Set();
 function spriteCSS(key, id) {
@@ -441,125 +388,100 @@ function loadSprite(key) {
 }
 function paint(el, key, id) {
   el.classList.add("loading");
-  loadSprite(key).then(() => { el.setAttribute("style", (el.dataset.style || "") + spriteCSS(key, id)); el.classList.remove("loading"); });
+  loadSprite(key).then(() => { el.setAttribute("style", spriteCSS(key, id)); el.classList.remove("loading"); });
 }
-function imgDiv(key, id, alt) { return `<div class="img loading" role="img" aria-label="${esc(alt)}" data-key="${key}" data-id="${id}"></div>`; }
-function paintAll(root) { root.querySelectorAll(".img[data-key]").forEach(el => paint(el, el.dataset.key, el.dataset.id)); }
+const imgDiv = (key, id) => `<div class="img loading" role="img" aria-label="${esc(name(id))}" data-key="${key}" data-id="${id}"></div>`;
+const paintAll = root => root.querySelectorAll(".img[data-key]").forEach(el => paint(el, el.dataset.key, el.dataset.id));
 
-/* ---------- static story sections ---------- */
+/* ---------- top of page: pictures, findings, how it works ---------- */
 function renderStory() {
   const m = D.meta, all = D.summary.pick_score.all.settings, h = all[HERO];
-  const match = D.matched.pick_score.find(r => r.handoff === HERO);
-  const small = S[HERO].segments[1];
-  $("#hero-eyebrow").textContent = `Pilot results · ${m.n_images.toLocaleString()} images · ${m.n_prompts} prompts · ${m.gpu.replace("NVIDIA ", "").replace(" Server Edition", "")}`;
-  $("#hero-stats").innerHTML = `
-    <div class="stat"><b>${pct(S[HERO].saved)}</b><span>less GPU time when the small model draws the last ${small[2] - small[1]} of ${m.steps} steps</span></div>
-    <div class="stat"><b>${fmtD(h.mean, "pick_score")}</b><span>PickScore change vs the full model (95% range ${fmtRange(h, "pick_score")}): no measurable loss</span></div>
-    <div class="stat"><b>${fmtD(match.mean, "pick_score")}</b><span>PickScore vs cutting the large model to ${S[match.control].segments[0][2]} steps, which costs about the same</span></div>`;
-  const key = spriteKey("comp_04", 42);
-  $("#hero-duo").innerHTML = ["large@30", HERO].map((id, j) => `
-    <div class="card">${imgDiv(key, id, name(id))}
-      <div class="cap"><b>${j ? "Handoff" : "Full large model"}</b><span class="sub">${j ? `${name(id)}` : "30 large model steps"}</span>${rail(id)}<span class="sub num">${(costSeconds(id)).toFixed(2)} s per image${j ? ` · ${pct(S[id].saved)} less` : ""}</span></div></div>`).join("");
-  const p = D.prompts.find(x => x.id === "comp_04");
-  $("#hero-cap").innerHTML = `Same prompt, same seed: “${esc(p.text)}”. The large model set the layout in both, so the cat, window and floor stay put.`;
+  const match = D.matched.pick_score.find(r => r.handoff === HERO), fewer = all[match.control];
+  const handoffSteps = S[HERO].segments[1][2] - S[HERO].segments[1][1];
+  const key = spriteKey(HERO_PROMPT, 42), prompt = D.prompts.find(x => x.id === HERO_PROMPT);
+
+  $("#hero-prompt").textContent = `“${prompt.text}”`;
+  $("#hero-duo").innerHTML = ["large@30", HERO].map(id => `
+    <div class="card">${imgDiv(key, id)}<div class="cap"><b>${esc(name(id))}</b>${rail(id)}<span>${id === HERO ? `${secs(id)}, ${pct0(S[id].saved)} less time` : secs(id)}</span></div></div>`).join("");
   paintAll($("#hero-duo"));
 
-  // findings
-  const fewer = all[match.control], h2h = D.head_to_head.pick_score, wins = h2h.filter(r => r.mean > 0).length;
-  const clear = h2h.filter(r => verdictOf(r) !== "same").length;
-  const cheap = all["l2s@0.2"], sm = all["small@30"], vqaMatch = D.matched.vqa_score.find(r => r.handoff === HERO);
-  $("#findings-list").innerHTML = `
-    <div class="finding"><span class="eyebrow">Best handoff</span><div class="big">${pct(S[HERO].saved)} cheaper, same quality</div>
-      <p>${esc(name(HERO))}: PickScore ${fmtD(h.mean, "pick_score")} vs the full model (95% range ${fmtRange(h, "pick_score")}). It scored better on ${h.better} of ${h.n} prompts and worse on ${h.worse}.</p>${verdictHTML(h)}</div>
-    <div class="finding"><span class="eyebrow">Against the line to beat</span><div class="big">Beats stopping early</div>
-      <p>Cutting the large model to ${S[match.control].segments[0][2]} steps saves ${pct(S[match.control].saved)} but loses ${fmtD(fewer.mean, "pick_score")} PickScore. At about the same cost the handoff scores ${fmtD(match.mean, "pick_score")} higher (95% range ${fmtRange(match, "pick_score")}), better on ${match.better} of ${match.n} prompts. Prompt match (VQAScore) shows no difference: ${fmtD(vqaMatch.mean, "vqa_score")} points.</p>${verdictHTML(match)}</div>
-    <div class="finding"><span class="eyebrow">Order</span><div class="big">Large first edges ahead</div>
-      <p>At equal cost, large-first scored higher than small-first at ${wins} of ${h2h.length} cost levels. ${clear === 0 ? `None of those gaps is clear yet with ${h2h[0].n} prompts.` : `${clear} of those gaps are clear.`} Small-first images vary a lot from prompt to prompt, because the small model picks the layout.</p><span class="verdict same">${VERDICT_TEXT.same}</span></div>
-    <div class="finding"><span class="eyebrow">The 30% goal</span><div class="big">Not reached yet</div>
-      <p>Past a quarter of the cost, quality drops. ${esc(name("l2s@0.2"))} saves ${pct(S["l2s@0.2"].saved)} and loses ${fmtD(cheap.mean, "pick_score")} PickScore. The small model alone saves ${pct(S["small@30"].saved)} and loses ${fmtD(sm.mean, "pick_score")}.</p>${verdictHTML(cheap)}</div>`;
+  const cheap = "l2s@0.2", cheapSmall = S[cheap].segments[1][2] - S[cheap].segments[1][1];
+  const findings = [
+    [`${pct0(S[HERO].saved)} less time, with no clear loss in quality.`,
+     `Letting the small model do the last ${handoffSteps} of ${m.steps} steps saved ${pct(S[HERO].saved)} of the time. The quality score moved by ${fmtD(h.mean, "pick_score")}, which is within the noise.`],
+    ["That beats stopping the big model early.",
+     `Running the big model for ${S[match.control].segments[0][2]} steps saves about the same time but scores ${fmtD(fewer.mean, "pick_score").replace("−", "")} lower. The handoff came out ahead on ${match.better} of ${match.n} prompts.`],
+    ["Whichever model starts sets the layout.",
+     "The early steps decide what goes where. If the small model starts, you get its composition, and the big model only polishes it."],
+    ["Saving 30% still costs quality.",
+     `Giving the small model ${cheapSmall} of the ${m.steps} steps saves ${pct0(S[cheap].saved)}, but quality drops noticeably. The small model alone saves ${pct0(S["small@30"].saved)} and drops further.`],
+  ];
+  $("#findings-list").innerHTML = findings.map(([t, d]) => `<li><b>${esc(t)}</b><p>${esc(d)}</p></li>`).join("");
 
-  // models
-  const L = SEC.large, Sm = SEC.small;
-  $("#models").innerHTML = `
-    <div class="card model"><span class="chip" style="background:var(--large)"></span><div><h3>Large: ${esc(m.models.large)}</h3><p>Stability AI's open model. ${L.toFixed(3)} s per step on this GPU.</p></div></div>
-    <div class="card model"><span class="chip" style="background:var(--small)"></span><div><h3>Small: ${esc(m.models.small)}</h3><p>Distilled from SDXL by Segmind, about half the size. ${Sm.toFixed(3)} s per step, ${pct0(1 - Sm / L)} faster per step.</p></div></div>`;
+  $("#how-text").innerHTML = `
+    <p>The big model is SDXL. The small model, SSD-1B, is a slimmed-down copy of it that takes ${pct0(1 - SEC.small / SEC.large)} less time per step.</p>
+    <p>Both work on the same internal version of the picture, so one can stop and the other carries on from exactly the same point.</p>
+    <p>In the bars, each block is one step: <span class="sw large"></span> big model, <span class="sw small"></span> small model. Faster steps are narrower, so a shorter bar means a cheaper picture. The grey end is the time to read the prompt and save the image.</p>`;
+  $("#how-example").innerHTML = ["large@30", HERO, "s2l@0.6"].map(id => `<div><span>${esc(name(id))}</span>${rail(id)}</div>`).join("");
 
-  // families with their rails
-  const famIds = { full: ["large@30"], fewer: ["large@24", "large@18", "large@12"], small: ["small@30"], large_first: ["l2s@0.8", "l2s@0.6", "l2s@0.4", "l2s@0.2"], small_first: ["s2l@0.2", "s2l@0.4", "s2l@0.6", "s2l@0.8"] };
-  $("#families").innerHTML = Object.entries(famIds).map(([f, ids]) => `
-    <div class="family"><div class="who"><span class="tag" style="color:${f === "large_first" ? "var(--large)" : f === "small_first" ? "var(--small)" : "var(--muted)"}">${FAMILY[f].tag}</span><h3>${FAMILY[f].name}</h3><p>${FAMILY[f].blurb}</p></div>
-      <div class="rails">${ids.map(id => `<div class="railrow"><span class="lbl">${esc(f === "large_first" || f === "small_first" ? name(id).replace(" steps, then", " →").replace(/^(Large|Small) /, "$1 ") : name(id))}</span>${rail(id)}<span class="pct">${S[id].saved ? `−${pct0(S[id].saved)}` : "full"}</span></div>`).join("")}</div></div>`).join("");
-
-  // layout demo
-  const trio = ["large@30", "s2l@0.6", "l2s@0.4"];
-  $("#layout-text").innerHTML = `<span>Same prompt and seed, three schedules. When the small model goes first, the image takes the small model's composition and the large model only refines it. When the large model goes first, the layout matches the full model's. This holds across the whole set: handoff images look most like the image of whichever model went first.</span>`;
-  $("#trio").innerHTML = trio.map(id => `<div class="card">${imgDiv(key, id, name(id))}<div class="cap"><b>${esc(name(id))}</b>${rail(id, "thin")}</div></div>`).join("");
-  paintAll($("#trio"));
-
-  // method + footer
   const items = [
-    ["Images", `${m.n_prompts} prompts in 6 categories (10 each) × ${m.seeds.length} seeds (${m.seeds.join(" and ")}) × 13 settings = ${m.n_images.toLocaleString()} images at 1024×1024. Every setting uses the same prompts, seeds, 30 Euler steps and guidance 7.5.`],
-    ["Hardware", `One session on an ${esc(m.gpu)}, ${m.run_start.slice(0, 10)}.`],
-    ["Cost", `GPU time per image from step counts: ${SEC.large.toFixed(3)} s per large step, ${SEC.small.toFixed(3)} s per small step, plus ${SEC.fixed.toFixed(3)} s to read the prompt and decode. Measured times matched this within 0.2%. Savings are relative to the full large model (${m.full_seconds.toFixed(2)} s).`],
-    ["Quality", "PickScore predicts which image people prefer. VQAScore asks a vision model (Qwen2.5-VL-3B) whether the image shows the prompt. CLIPScore measures image-text similarity. Text accuracy reads text prompts with OCR and checks the words."],
-    ["Statistics", "Each setting is compared with the full model on the same prompt and seed. A prompt's two seeds are averaged first, so the 95% ranges are over prompts: 60 overall, 10 per category. “No measurable change” means the range includes zero."],
-    ["Limits", "This is a pilot. Ten prompts per category gives wide ranges. Scores are automatic stand-ins for human judgment. Object counting for the composition prompts has not been scored yet. Results come from one GPU type."],
+    ["What we made", `${m.n_prompts} prompts of 6 types, each started from ${m.seeds.length} different noise patterns and run with all 13 settings: ${m.n_images.toLocaleString()} images at 1024×1024. Everything except which model ran each step stayed the same.`],
+    ["Hardware", `All images came from one session on an ${esc(m.gpu)} on ${m.run_start.slice(0, 10)}.`],
+    ["Time", `Each image's time comes from its steps: ${SEC.large.toFixed(3)} s per big-model step, ${SEC.small.toFixed(3)} s per small-model step, and ${SEC.fixed.toFixed(2)} s to read the prompt and save the image. Measured times matched this within 0.2%.`],
+    ["Quality", "PickScore predicts which image people would prefer. VQAScore asks a vision model whether the image shows the prompt. CLIPScore measures how well the image matches the prompt's words. For text prompts, OCR reads the text and checks the words."],
+    ["Ranges", "Each setting is compared with the big model on the same prompt and starting noise. The ranges are 95% confidence intervals across prompts. When a range includes zero, we call it no clear change."],
+    ["Limits", "This is a pilot with 10 prompts per type, so results for a single type are rough. The scores are automatic and can miss what people notice. Object counts have not been scored yet."],
+    ["Project names", "In the project code, small-model-first is Method 1 (the T-Stitch order) and big-model-first is Method 2 (the Hybrid SD order)."],
   ];
   $("#method-grid").innerHTML = items.map(([t, p]) => `<div><h3>${t}</h3><p>${p}</p></div>`).join("");
-  $("#footer-text").textContent = `Image Model Re-Router pilot study · ${m.n_images.toLocaleString()} images generated ${m.run_start.slice(0, 10)} on ${m.gpu}.`;
+  $("#footer-text").textContent = `Image Model Re-Router, a pilot study. ${m.n_images.toLocaleString()} images made on ${m.run_start.slice(0, 10)}.`;
 }
 
 /* ---------- explorer ---------- */
-function promptsIn(g) { return D.prompts.filter(p => p.group === g); }
+const promptsIn = g => D.prompts.filter(p => p.group === g);
 function renderControls() {
   $("#group-chips").innerHTML = D.groups.map(g => `<button class="chip-btn" type="button" data-g="${g.id}" aria-pressed="${g.id === st.group}">${esc(g.label)}</button>`).join("");
-  $("#prompt-select").innerHTML = promptsIn(st.group).map((p, i) => `<option value="${p.id}"${p.id === st.prompt ? " selected" : ""}>${i + 1}. ${esc(p.text)}</option>`).join("");
-  $("#seed-seg").innerHTML = D.meta.seeds.map(s => `<button type="button" data-seed="${s}" aria-pressed="${s === st.seed}">Seed ${s}</button>`).join("");
+  $("#prompt-select").innerHTML = promptsIn(st.group).map(p => `<option value="${p.id}"${p.id === st.prompt ? " selected" : ""}>${esc(p.text)}</option>`).join("");
+  $("#seed-seg").innerHTML = D.meta.seeds.map((s, i) => `<button type="button" data-seed="${s}" aria-pressed="${s === st.seed}" title="Seed ${s}">Version ${i + 1}</button>`).join("");
 }
 function expectText(e) {
   if (!e) return "";
   const kv = Object.fromEntries(e.split(";").map(x => x.split("=").map(s => s.trim())));
-  if (kv.text) return `Expected text: <code>${esc(kv.text)}</code>`;
-  if (kv.count) return `Expected: <code>${esc(kv.count)} × ${esc(kv.object || "object")}</code>${kv.relation ? ` · ${esc(kv.relation)}` : ""}`;
+  if (kv.text) return `Should read <code>${esc(kv.text)}</code>`;
+  if (kv.count) return `Should show ${esc(kv.count)} ${esc(kv.object || "objects")}${+kv.count === 1 ? "" : "s"}`;
   return "";
 }
-function scoreOf(id) { return D.images[spriteKey(st.prompt, st.seed)][S[id].i]; }
-function sideCard(letter, id) {
+const scoreOf = id => D.images[spriteKey(st.prompt, st.seed)][S[id].i];
+function sideCard(side, id) {
   const sc = scoreOf(id), ref = scoreOf("large@30"), isRef = id === "large@30";
-  const d = (v, r, m) => { if (isRef) return ""; const x = v - r; const cls = x > 0 ? "delta-up" : x < 0 ? "delta-down" : ""; return ` <span class="${cls}">(${fmtD(x, m)} vs full)</span>`; };
+  const d = (v, r, m) => { if (isRef) return ""; const x = v - r, cls = x > 0 ? "delta-up" : x < 0 ? "delta-down" : ""; return ` <span class="${cls}">(${fmtD(x, m)})</span>`; };
   const opts = D.settings.map(s => `<option value="${s.id}"${s.id === id ? " selected" : ""}>${esc(name(s.id))}</option>`).join("");
-  const text = sc[3] === null ? "" : `<dt>Text read</dt><dd>${sc[3] ? "✓ matches" : "✗ does not match"}${sc[4] ? ` · “${esc(sc[4])}”` : ""}</dd>`;
-  return `<div class="head"><span class="letter">${letter}</span><select id="sel-${letter}" data-side="${letter}" aria-label="Image ${letter}">${opts}</select></div>
-    <div class="hint">${FAMILY[S[id].family].tag}: ${esc(FAMILY[S[id].family].name)}</div>
+  const text = sc[3] === null ? "" : `<dt>Text it wrote</dt><dd>${sc[4] ? `“${esc(sc[4])}”` : "none found"} ${sc[3] ? "✓" : "✗"}</dd>`;
+  return `<div class="head"><span>${side}</span><select data-side="${side === "Left" ? "a" : "b"}" aria-label="${side} image">${opts}</select></div>
     ${rail(id, "tall")}
     <dl class="facts">
-      <dt>GPU time</dt><dd>${costSeconds(id).toFixed(2)} s per image${isRef ? "" : ` · ${pct(S[id].saved)} less`}</dd>
+      <dt>Time</dt><dd>${timeText(id)}</dd>
       <dt>PickScore</dt><dd>${sc[0].toFixed(2)}${d(sc[0], ref[0], "pick_score")}</dd>
-      <dt>VQAScore</dt><dd>${(sc[1] * 100).toFixed(1)}${d(sc[1], ref[1], "vqa_score")}</dd>
-      <dt>CLIPScore</dt><dd>${sc[2].toFixed(2)}${d(sc[2], ref[2], "clip_score")}</dd>${text}
+      <dt>VQAScore</dt><dd>${(sc[1] * 100).toFixed(1)}${d(sc[1], ref[1], "vqa_score")}</dd>${text}
     </dl>`;
 }
 function tileHTML(id) {
-  const key = spriteKey(st.prompt, st.seed), sc = scoreOf(id), ref = scoreOf("large@30");
-  const x = sc[0] - ref[0], cls = x > 0 ? "delta-up" : x < 0 ? "delta-down" : "";
-  const meta = id === "large@30" ? `${costSeconds(id).toFixed(2)} s · PickScore ${sc[0].toFixed(2)}` :
-    `${pct0(S[id].saved)} less GPU time<br>PickScore <span class="${cls}">${fmtD(x, "pick_score")}</span> vs full`;
-  return `<button type="button" class="tile" data-id="${id}" aria-pressed="${id === st.b}" aria-label="Compare ${esc(name(id))} with image A">
-    ${imgDiv(key, id, name(id))}${rail(id, "thin")}<span class="t-name">${esc(name(id))}</span><span class="t-meta">${meta}</span></button>`;
+  return `<button type="button" class="tile" data-id="${id}" aria-pressed="${id === st.b}">
+    ${imgDiv(spriteKey(st.prompt, st.seed), id)}${rail(id, "thin")}<span class="t-name">${esc(name(id))}</span><span class="t-meta">${id === "large@30" ? secs(id) : `${pct0(S[id].saved)} less time`}</span></button>`;
 }
 function renderExplorer() {
   const key = spriteKey(st.prompt, st.seed), p = D.prompts.find(x => x.id === st.prompt);
   $("#prompt-text").textContent = p.text;
-  $("#prompt-expect").innerHTML = expectText(p.expected) || `Category: ${esc(D.groups.find(g => g.id === p.group).label)}`;
+  const ex = expectText(p.expected); $("#prompt-expect").innerHTML = ex; $("#prompt-expect").hidden = !ex;
   paint($("#layer-a"), key, st.a); paint($("#layer-b"), key, st.b);
-  $("#side-a").innerHTML = sideCard("A", st.a);
-  $("#side-b").innerHTML = sideCard("B", st.b);
+  $("#badge-a").textContent = shortName(st.a); $("#badge-b").textContent = shortName(st.b);
+  $("#side-a").innerHTML = sideCard("Left", st.a);
+  $("#side-b").innerHTML = sideCard("Right", st.b);
   $("#ref-tile").innerHTML = tileHTML("large@30");
-  $("#board-rows").innerHTML = ROWS.map(r => `<div class="board-row"><div class="row-head"><span class="sw ${r.fam === "large_first" ? "large" : r.fam === "small_first" ? "small" : "control"}"></span>${esc(r.title)}${r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}</div>
-    <div class="tiles">${r.ids.map(tileHTML).join("")}</div></div>`).join("");
-  paintAll($("#explore .board"));
-  ["#seed-seg button", "#group-chips button"].forEach(sel => document.querySelectorAll(sel).forEach(b => b.setAttribute("aria-pressed", b.dataset.seed ? +b.dataset.seed === st.seed : b.dataset.g === st.group)));
-  // warm the neighbours so Next feels instant
+  $("#board-rows").innerHTML = ROWS.map(r => `<div class="board-row"><div class="row-head"><span class="sw ${r.cls}"></span>${esc(r.title)}</div><div class="tiles">${r.ids.map(tileHTML).join("")}</div></div>`).join("");
+  paintAll($("#how .board"));
+  document.querySelectorAll("#seed-seg button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.seed === st.seed));
+  document.querySelectorAll("#group-chips button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === st.group));
   const list = promptsIn(st.group), i = list.findIndex(x => x.id === st.prompt);
   [list[i + 1], list[i - 1]].filter(Boolean).forEach(q => loadSprite(spriteKey(q.id, st.seed)));
 }
@@ -570,16 +492,16 @@ function bindExplorer() {
   const step = d => { const list = promptsIn(st.group), i = list.findIndex(x => x.id === st.prompt); st.prompt = list[(i + d + list.length) % list.length].id; $("#prompt-select").value = st.prompt; renderExplorer(); };
   $("#prev-prompt").addEventListener("click", () => step(-1));
   $("#next-prompt").addEventListener("click", () => step(1));
-  $("#explore").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t) return; st.b = t.dataset.id; renderExplorer(); });
-  $("#explore").addEventListener("change", e => { const s = e.target.closest("select[data-side]"); if (!s) return; st[s.dataset.side.toLowerCase()] = s.value; renderExplorer(); });
+  $("#how").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t) return; st.b = t.dataset.id; renderExplorer(); });
+  $("#how").addEventListener("change", e => { const s = e.target.closest("select[data-side]"); if (!s) return; st[s.dataset.side] = s.value; renderExplorer(); });
   $("#swipe-range").addEventListener("input", e => $("#swipe").style.setProperty("--x", `${e.target.value}%`));
 }
 
 /* ---------- charts ---------- */
 const SERIES = [
-  { fam: "fewer", ids: ["large@24", "large@18", "large@12"], label: "Large model, fewer steps", from: true, to: false },
-  { fam: "large_first", ids: ["l2s@0.8", "l2s@0.6", "l2s@0.4", "l2s@0.2"], label: "Method 2: large first", from: true, to: true, nudge: -1 },
-  { fam: "small_first", ids: ["s2l@0.2", "s2l@0.4", "s2l@0.6", "s2l@0.8"], label: "Method 1: small first", from: true, to: true, nudge: 1 },
+  { fam: "fewer", ids: ["large@24", "large@18", "large@12"], to: false },
+  { fam: "large_first", ids: ["l2s@0.8", "l2s@0.6", "l2s@0.4", "l2s@0.2"], to: true, nudge: -1 },
+  { fam: "small_first", ids: ["s2l@0.2", "s2l@0.4", "s2l@0.6", "s2l@0.8"], to: true, nudge: 1 },
 ];
 function niceStep(span, count) {
   const raw = span / count, mag = 10 ** Math.floor(Math.log10(raw)), e = raw / mag;
@@ -587,24 +509,21 @@ function niceStep(span, count) {
 }
 function chartSVG(W, metric, group, compact, uid) {
   const sum = D.summary[metric][group];
-  if (!sum) return { svg: `<p class="hint">No data for this combination.</p>`, pts: [] };
-  const f = METRIC_FMT[metric], rows = sum.settings, k = f.k;
+  const f = METRIC[metric], rows = sum.settings, k = f.k;
+  const sparse = compact || W < 560;   // narrow charts drop in-chart labels; the legend above carries identity
   const H = compact ? 230 : Math.round(Math.min(470, Math.max(340, W * 0.5)));
-  const M = compact ? { l: 58, r: 42, t: 34, b: 30 } : W < 560 ? { l: 66, r: 50, t: 52, b: 46 } : { l: 84, r: 62, t: 52, b: 46 };
+  const M = compact ? { l: 58, r: 42, t: 34, b: 30 } : W < 560 ? { l: 66, r: 50, t: 50, b: 46 } : { l: 84, r: 62, t: 50, b: 46 };
   const pw = W - M.l - M.r, ph = H - M.t - M.b;
-  const ids = Object.keys(rows);
-  const ys = [0, ...ids.flatMap(id => [rows[id].lo * k, rows[id].hi * k])];
+  const ys = [0, ...Object.values(rows).flatMap(r => [r.lo * k, r.hi * k])];
   let y0 = Math.min(...ys), y1 = Math.max(...ys); const pad = (y1 - y0) * 0.08; y0 -= pad; y1 += pad;
   const ystep = niceStep(y1 - y0, compact ? 3 : 5); y0 = Math.floor(y0 / ystep) * ystep; y1 = Math.ceil(y1 / ystep) * ystep;
   const xmax = Math.ceil(Math.max(...D.settings.map(s => s.saved)) * 10) / 10;
   const X = v => M.l + v / xmax * pw, Y = v => M.t + (y1 - v) / (y1 - y0) * ph;
-  const fs = compact ? 0.9 : 1;
-  const sparse = compact || W < 560;   // narrow: no in-chart labels or notes; the legend above carries identity
+  const fsz = compact ? 11.5 : 12.5;
   let g = `<defs><marker id="ah-${uid}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="${compact ? 6 : 7}" markerHeight="${compact ? 6 : 7}" orient="auto-start-reverse"><path class="c-arrowhead" d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
-  // goal zone: 30%+ saved with no loss
   if (xmax > 0.3) g += `<rect class="c-goal" x="${X(0.3)}" y="${Y(y1)}" width="${X(xmax) - X(0.3)}" height="${Y(0) - Y(y1)}"/>`;
-  if (!sparse && xmax > 0.3) g += `<text class="c-goal-label" x="${X(xmax) - 8}" y="${Y(y1) + 16}" text-anchor="end">Goal: 30%+ cheaper, no loss</text>`;
-  // grid + numeric scales on the right (quality) and top (cost)
+  if (!sparse && xmax > 0.3) g += `<text class="c-goal-label" x="${X(xmax) - 8}" y="${Y(y1) + 16}" text-anchor="end">Goal: 30% cheaper, same quality</text>`;
+  // numeric scales: quality change on the right, time saved on the top
   for (let v = y0; v <= y1 + 1e-9; v += ystep) {
     const vv = +v.toFixed(6);
     if (Math.abs(vv) > 1e-9) g += `<line class="c-grid" x1="${M.l}" x2="${M.l + pw}" y1="${Y(vv)}" y2="${Y(vv)}"/>`;
@@ -618,22 +537,22 @@ function chartSVG(W, metric, group, compact, uid) {
   }
   g += `<line class="c-zero" x1="${M.l}" x2="${M.l + pw}" y1="${Y(0)}" y2="${Y(0)}"/>`;
   if (!compact) {
-    if (!sparse) g += `<text class="c-note" x="${M.l + pw - 8}" y="${Y(0) + 15}" text-anchor="end">Same quality as the full model</text>`;
-    g += `<text class="c-title" x="${M.l + pw / 2}" y="14" text-anchor="middle">GPU time saved vs full model</text>`;
+    g += `<text class="c-title" x="${M.l + pw / 2}" y="16" text-anchor="middle">Time saved</text>`;
     g += `<text class="c-title" transform="translate(${W - 8},${M.t + ph / 2}) rotate(90)" text-anchor="middle">${esc(f.axis)}</text>`;
+    if (!sparse) g += `<text class="c-note" x="${M.l + pw - 8}" y="${Y(0) + 15}" text-anchor="end">Same as the big model</text>`;
   }
-  // plain-language direction arrows on the left (quality) and bottom (cost)
+  // plain-language directions on the left and bottom
   const ax = M.l - (compact ? 12 : 16), ay = M.t + ph + (compact ? 12 : 16);
   g += `<line class="c-dir-axis" x1="${ax}" x2="${ax}" y1="${M.t + ph - 4}" y2="${M.t + 4}" marker-start="url(#ah-${uid})" marker-end="url(#ah-${uid})"/>`;
-  g += `<text class="c-dir" x="${ax - 8}" y="${M.t + 10}" text-anchor="end" style="font-size:${12.5 * fs}px">Better</text>`;
-  g += `<text class="c-dir" x="${ax - 8}" y="${M.t + ph}" text-anchor="end" style="font-size:${12.5 * fs}px">Worse</text>`;
+  g += `<text class="c-dir" x="${ax - 8}" y="${M.t + 10}" text-anchor="end" style="font-size:${fsz}px">Better</text>`;
+  g += `<text class="c-dir" x="${ax - 8}" y="${M.t + ph}" text-anchor="end" style="font-size:${fsz}px">Worse</text>`;
   g += `<line class="c-dir-axis" x1="${M.l + 4}" x2="${M.l + pw - 4}" y1="${ay}" y2="${ay}" marker-start="url(#ah-${uid})" marker-end="url(#ah-${uid})"/>`;
-  g += `<text class="c-dir" x="${M.l}" y="${ay + (compact ? 15 : 20)}" style="font-size:${12.5 * fs}px">More costly</text>`;
-  g += `<text class="c-dir" x="${M.l + pw}" y="${ay + (compact ? 15 : 20)}" text-anchor="end" style="font-size:${12.5 * fs}px">Less costly</text>`;
+  g += `<text class="c-dir" x="${M.l}" y="${ay + (compact ? 15 : 20)}" style="font-size:${fsz}px">More costly</text>`;
+  g += `<text class="c-dir" x="${M.l + pw}" y="${ay + (compact ? 15 : 20)}" text-anchor="end" style="font-size:${fsz}px">Less costly</text>`;
 
-  // data
+  // data: every line starts at the big model; both handoff lines end at the small model, since those are their limits
   const pts = [], nudgePx = compact ? 3 : 5;
-  const P = id => ({ id, x: S[id].saved, ...(rows[id] || {}) });
+  const P = id => ({ id, x: S[id].saved, ...rows[id] });
   const sm = rows["small@30"] ? P("small@30") : null;
   for (const s of SERIES) {
     const seq = s.ids.filter(id => rows[id]).map(P);
@@ -642,40 +561,35 @@ function chartSVG(W, metric, group, compact, uid) {
     for (const q of seq) { const cx = X(q.x) + (s.nudge || 0) * nudgePx; pts.push({ ...q, fam: s.fam, cx, cy: Y(q.mean * k), lo: Y(q.lo * k), hi: Y(q.hi * k) }); }
   }
   if (sm) pts.push({ ...sm, fam: "small", cx: X(sm.x), cy: Y(sm.mean * k), lo: Y(sm.lo * k), hi: Y(sm.hi * k) });
-  for (const q of pts) g += `<line class="c-ci s-${q.fam === "small" ? "small" : q.fam}" x1="${q.cx}" x2="${q.cx}" y1="${q.lo}" y2="${q.hi}"/><line class="c-ci s-${q.fam === "small" ? "small" : q.fam}" x1="${q.cx - 3}" x2="${q.cx + 3}" y1="${q.lo}" y2="${q.lo}"/><line class="c-ci s-${q.fam === "small" ? "small" : q.fam}" x1="${q.cx - 3}" x2="${q.cx + 3}" y1="${q.hi}" y2="${q.hi}"/>`;
+  for (const q of pts) for (const [x1, x2, y1_, y2] of [[q.cx, q.cx, q.lo, q.hi], [q.cx - 3, q.cx + 3, q.lo, q.lo], [q.cx - 3, q.cx + 3, q.hi, q.hi]])
+    g += `<line class="c-ci s-${q.fam}" x1="${x1}" x2="${x2}" y1="${y1_}" y2="${y2}"/>`;
   const r = compact ? 4 : 5;
   for (const q of pts) g += q.fam === "small"
-    ? `<rect class="c-ring f-small s-small" x="${q.cx - r - 1}" y="${q.cy - r - 1}" width="${2 * r + 2}" height="${2 * r + 2}" rx="2" style="stroke:var(--control);stroke-width:2"/>`
+    ? `<rect class="f-small" x="${q.cx - r - 1}" y="${q.cy - r - 1}" width="${2 * r + 2}" height="${2 * r + 2}" rx="2" style="stroke:var(--control);stroke-width:2"/>`
     : `<circle class="c-ring f-${q.fam}" cx="${q.cx}" cy="${q.cy}" r="${r}"/>`;
   g += `<circle class="c-ring f-full" cx="${X(0)}" cy="${Y(0)}" r="${r + 1}"/>`;
   pts.push({ id: "large@30", fam: "full", x: 0, mean: 0, cx: X(0), cy: Y(0) });
-  // selective direct labels (wide main chart only): the two methods at their cheapest point, the controls at their ends
   if (!sparse) {
     const lastOf = fam => pts.filter(q => q.fam === fam).sort((a, b) => b.x - a.x)[0];
-    const m2 = lastOf("large_first"), m1 = lastOf("small_first"), fw = lastOf("fewer");
-    if (m2 && m1) {
-      const m2up = m2.cy <= m1.cy;
-      g += `<text class="c-label large_first" x="${m2.cx - 10}" y="${m2up ? Math.min(m2.hi, m2.cy) - 10 : Math.max(m2.lo, m2.cy) + 18}" text-anchor="end">Method 2: large first</text>`;
-      g += `<text class="c-label small_first" x="${m1.cx - 10}" y="${m2up ? Math.max(m1.lo, m1.cy) + 18 : Math.min(m1.hi, m1.cy) - 10}" text-anchor="end">Method 1: small first</text>`;
-    }
-    if (fw) g += `<text class="c-label fewer" x="${fw.cx - 10}" y="${fw.lo + 16 > M.t + ph ? fw.cy - 12 : fw.lo + 16}" text-anchor="end">Fewer steps</text>`;
-    if (sm) { const q = pts.find(p => p.fam === "small"); g += `<text class="c-label small" x="${q.cx + 10}" y="${q.cy + 4}">Small only</text>`; }
-    g += `<text class="c-label full" x="${X(0) + 10}" y="${Y(0) - 10}">Full model</text>`;
+    const m2 = lastOf("large_first"), m1 = lastOf("small_first"), fw = lastOf("fewer"), sq = pts.find(p => p.fam === "small");
+    const up = m2.cy <= m1.cy;
+    g += `<text class="c-label large_first" x="${m2.cx - 10}" y="${up ? Math.min(m2.hi, m2.cy) - 10 : Math.max(m2.lo, m2.cy) + 18}" text-anchor="end">Big starts</text>`;
+    g += `<text class="c-label small_first" x="${m1.cx - 10}" y="${up ? Math.max(m1.lo, m1.cy) + 18 : Math.min(m1.hi, m1.cy) - 10}" text-anchor="end">Small starts</text>`;
+    g += `<text class="c-label fewer" x="${fw.cx - 10}" y="${fw.lo + 16 > M.t + ph ? fw.cy - 12 : fw.lo + 16}" text-anchor="end">Fewer steps</text>`;
+    if (sq) g += `<text class="c-label small" x="${sq.cx + 10}" y="${sq.cy + 4}">Small only</text>`;
+    g += `<text class="c-label full" x="${X(0) + 10}" y="${Y(0) - 10}">Big only</text>`;
   }
-  // hit targets
-  for (const q of pts) g += `<circle class="hit" cx="${q.cx}" cy="${q.cy}" r="${compact ? 11 : 14}" tabindex="0" data-id="${q.id}" aria-label="${esc(name(q.id))}${q.id === "large@30" ? "" : `: ${pct(q.x)} saved, change ${fmtD(q.mean, metric)}`}"/>`;
-  const label = `Chart of ${METRIC_FMT[metric].axis.toLowerCase()} against GPU time saved for ${group === "all" ? "all prompts" : D.groups.find(x => x.id === group).label}. Up is better quality, right is cheaper.`;
+  for (const q of pts) g += `<circle class="hit" cx="${q.cx}" cy="${q.cy}" r="${compact ? 11 : 14}" tabindex="0" data-id="${q.id}" aria-label="${esc(name(q.id))}"/>`;
+  const label = `${f.axis} against time saved. Up is better, right is cheaper.`;
   return { svg: `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(label)}">${g}</svg>`, pts };
 }
 function tipHTML(id, metric, group) {
-  if (id === "large@30") return `<b>Full large model</b><span class="fam">Reference</span>${rail(id)}<dl><dt>GPU time</dt><dd>${costSeconds(id).toFixed(2)} s per image</dd><dt>Mean score</dt><dd>${(D.summary[metric][group].full_mean * METRIC_FMT[metric].k).toFixed(METRIC_FMT[metric].d)}</dd></dl>`;
-  const r = D.summary[metric][group].settings[id], fam = FAMILY[S[id].family];
-  const pref = metric === "pick_score" ? `<dt>People pick</dt><dd>the full model ${Math.round(100 / (1 + Math.exp(r.mean)))}% of the time</dd>` : "";
-  return `<b>${esc(name(id))}</b><span class="fam">${fam.tag}: ${esc(fam.name)}</span>${rail(id)}
-    <dl><dt>GPU time</dt><dd>${costSeconds(id).toFixed(2)} s · ${pct(S[id].saved)} less</dd>
-    <dt>Change</dt><dd>${fmtD(r.mean, metric)} ${esc(METRIC_FMT[metric].unit)}</dd>
-    <dt>95% range</dt><dd>${fmtRange(r, metric)}</dd>
-    <dt>Prompts</dt><dd>better on ${r.better}, worse on ${r.worse} of ${r.n}</dd>${pref}</dl>${verdictHTML(r)}`;
+  if (id === "large@30") return `<b>Big model only</b>${rail(id)}<p>${secs(id)} per image. Every other setting is compared with this one.</p>`;
+  const r = D.summary[metric][group].settings[id];
+  const pref = metric === "pick_score" ? `<p>People would pick the big model's image ${Math.round(100 / (1 + Math.exp(r.mean)))}% of the time.</p>` : "";
+  return `<b>${esc(name(id))}</b>${rail(id)}
+    <p>${secs(id)} per image, ${pct(S[id].saved)} less time. ${METRIC[metric].axis}: ${fmtD(r.mean, metric)}, likely between ${fmtRange(r, metric)}.</p>
+    <p>Better on ${r.better} of ${r.n} prompts, worse on ${r.worse}.</p>${pref}${verdictHTML(r)}`;
 }
 function drawChart(el, metric, group, compact, uid) {
   const W = Math.max(280, Math.floor(el.clientWidth));
@@ -698,35 +612,31 @@ function drawChart(el, metric, group, compact, uid) {
 }
 function renderLegend() {
   const ln = c => `<svg width="26" height="12" aria-hidden="true"><line x1="1" x2="25" y1="6" y2="6" style="stroke:${c};stroke-width:2"/><circle cx="13" cy="6" r="4" style="fill:${c};stroke:var(--surface);stroke-width:2"/></svg>`;
-  $("#legend").innerHTML = `<span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="6" style="fill:var(--ink)"/></svg>Full large model (reference)</span>
-    <span>${ln("var(--control)")}Large model, fewer steps</span>
+  $("#legend").innerHTML = `<span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="6" style="fill:var(--ink)"/></svg>Big model only</span>
+    <span>${ln("var(--control)")}Big model, fewer steps</span>
     <span><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" style="fill:var(--surface);stroke:var(--control);stroke-width:2"/></svg>Small model only</span>
-    <span>${ln("var(--large)")}Method 2: large first, small finishes</span>
-    <span>${ln("var(--small)")}Method 1: small first, large finishes</span>`;
+    <span>${ln("var(--large)")}Big starts, small finishes</span>
+    <span>${ln("var(--small)")}Small starts, big finishes</span>`;
 }
 function renderTable() {
-  const sum = D.summary[st.metric][st.cgroup]; if (!sum) { $("#table-wrap").innerHTML = ""; return; }
-  const ids = D.settings.map(s => s.id).filter(id => id === "large@30" || sum.settings[id]);
-  $("#table-wrap").innerHTML = `<table><thead><tr><th>Setting</th><th>Step plan</th><th class="num">GPU time saved</th><th class="num">Change vs full</th><th class="num">95% range</th><th class="num">Better / worse</th><th>Verdict</th></tr></thead><tbody>${ids.map(id => {
-    if (id === "large@30") return `<tr><td>Full large model</td><td>${rail(id, "thin")}</td><td class="num">0%</td><td class="num">reference</td><td class="num"></td><td class="num"></td><td></td></tr>`;
+  const sum = D.summary[st.metric][st.cgroup];
+  const ids = D.settings.map(s => s.id).filter(id => id !== "large@30" && sum.settings[id]);
+  $("#table-wrap").innerHTML = `<table><thead><tr><th>Setting</th><th>Steps</th><th class="num">Time saved</th><th class="num">Change</th><th class="num">Likely range</th><th class="num">Prompts better / worse</th><th>Result</th></tr></thead><tbody>${ids.map(id => {
     const r = sum.settings[id];
     return `<tr><td>${esc(name(id))}</td><td>${rail(id, "thin")}</td><td class="num">${pct(S[id].saved)}</td><td class="num">${fmtD(r.mean, st.metric)}</td><td class="num">${fmtRange(r, st.metric)}</td><td class="num">${r.better} / ${r.worse}</td><td>${verdictHTML(r)}</td></tr>`;
   }).join("")}</tbody></table>`;
 }
 function renderCharts() {
-  const avail = g => !!D.summary[st.metric][g];
   if (st.metric === "ocr_match") st.cgroup = "text";
-  else if (!avail(st.cgroup)) st.cgroup = "all";
+  else if (!D.summary[st.metric][st.cgroup]) st.cgroup = "all";
   $("#metric-seg").innerHTML = D.metrics.map(m => `<button type="button" data-m="${m.id}" aria-pressed="${m.id === st.metric}">${esc(m.label)}</button>`).join("");
-  $("#cgroup-chips").innerHTML = [{ id: "all", label: "All categories" }, ...D.groups].map(g => `<button class="chip-btn" type="button" data-g="${g.id}" aria-pressed="${g.id === st.cgroup}"${st.metric === "ocr_match" && g.id !== "text" ? " disabled" : ""}>${esc(g.label)}</button>`).join("");
-  const m = D.metrics.find(x => x.id === st.metric), n = Object.values(D.summary[st.metric][st.cgroup].settings)[0].n;
-  $("#metric-blurb").textContent = `${m.label}: ${m.blurb}.${st.metric === "ocr_match" ? " Only the text prompts are checked." : ""}`;
-  $("#chart-note").textContent = `${st.cgroup === "all" ? "All categories" : D.groups.find(g => g.id === st.cgroup).label}: ${n} prompts × ${D.meta.seeds.length} seeds. Hover or tab to a point for details.`;
+  $("#cgroup-chips").innerHTML = [{ id: "all", label: "All prompts" }, ...D.groups].map(g => `<button class="chip-btn" type="button" data-g="${g.id}" aria-pressed="${g.id === st.cgroup}"${st.metric === "ocr_match" && g.id !== "text" ? " disabled" : ""}>${esc(g.label)}</button>`).join("");
+  $("#metric-blurb").textContent = METRIC[st.metric].what;
   drawChart($("#main-chart"), st.metric, st.cgroup, false, "main");
   renderTable();
   const mw = $("#multiples-wrap"); mw.hidden = st.metric === "ocr_match";
   if (!mw.hidden) {
-    $("#multiples").innerHTML = D.groups.map(g => `<div class="card multiple" data-active="${g.id === st.cgroup}"><button type="button" class="mhead" data-g="${g.id}"><b>${esc(g.label)}</b><span>${esc(g.blurb)}</span></button><div class="chart" data-g="${g.id}"></div></div>`).join("");
+    $("#multiples").innerHTML = D.groups.map(g => `<div class="card multiple" data-active="${g.id === st.cgroup}"><button type="button" class="mhead" data-g="${g.id}">${esc(g.label)}</button><div class="chart" data-g="${g.id}"></div></div>`).join("");
     document.querySelectorAll("#multiples .chart").forEach(el => drawChart(el, st.metric, el.dataset.g, true, `m-${el.dataset.g}`));
   }
 }
@@ -734,17 +644,17 @@ function bindCharts() {
   $("#metric-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.metric = b.dataset.m; renderCharts(); });
   $("#cgroup-chips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; st.cgroup = b.dataset.g; renderCharts(); });
   $("#multiples").addEventListener("click", e => { const b = e.target.closest(".mhead"); if (!b) return; st.cgroup = b.dataset.g; renderCharts(); $("#results").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
-  $("#table-toggle").addEventListener("click", e => { st.table = !st.table; e.target.setAttribute("aria-pressed", st.table); e.target.textContent = st.table ? "Hide table" : "Show as table"; $("#table-wrap").hidden = !st.table; });
+  $("#table-toggle").addEventListener("click", e => { st.table = !st.table; e.target.setAttribute("aria-pressed", st.table); e.target.textContent = st.table ? "Hide the numbers" : "Show the numbers"; $("#table-wrap").hidden = !st.table; });
   let w = 0;
   new ResizeObserver(() => { const nw = $("#main-chart").clientWidth; if (Math.abs(nw - w) > 4) { w = nw; renderCharts(); } }).observe($("#main-chart"));
 }
 
-/* ---------- boot ---------- */
+/* ---------- start ---------- */
 fetch("data.json").then(r => { if (!r.ok) throw new Error(`data.json: HTTP ${r.status}`); return r.json(); }).then(data => {
   D = data; SEC = D.meta.step_seconds;
   S = Object.fromEntries(D.settings.map((s, i) => [s.id, { ...s, i }]));
   renderStory(); renderControls(); renderExplorer(); bindExplorer(); renderLegend(); renderCharts(); bindCharts();
 }).catch(err => {
-  document.querySelector("main").insertAdjacentHTML("afterbegin", `<div class="wrap" style="padding-block:24px"><div class="error">The results data did not load (${esc(err.message)}). Reload the page to try again.</div></div>`);
+  $("main").insertAdjacentHTML("afterbegin", `<div class="wrap" style="padding-block:24px"><div class="error">The results did not load (${esc(err.message)}). Reload the page to try again.</div></div>`);
 });
 </script>
