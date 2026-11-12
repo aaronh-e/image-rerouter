@@ -15,3 +15,5 @@ results/*.zip
 results/*.bak
 results/smoke_images/
 results/smoke_plots/
+site/data.json
+site/sprites/
