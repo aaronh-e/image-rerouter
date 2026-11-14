@@ -359,7 +359,14 @@ for row, pid in zip(axes, ids):
 plt.tight_layout(); plt.show()"""),
 ("md", """## Level 4: the Jev decider
 `decider_eval.py` builds the answer key from the sweep, splits prompts 70/30, asks Jev its typed questions, learns a profile→setting policy on the 70%, and scores the router on the 30% **by lookup** (every setting was already generated). The regex baseline runs first so you can see whether Jev adds anything."""),
-("code", """try:
+("code", """# Level 4 needs no GPU, so this cell also works on its own in a fresh runtime: it mounts Drive and
+# moves into the repo folder from the setup cell (it must already hold results/results.csv from Level 3).
+import os, sys
+if "google.colab" in sys.modules and not os.path.exists("bench/decider_eval.py"):
+    from google.colab import drive; drive.mount("/content/drive")
+    %cd /content/drive/MyDrive/image-rerouter
+    !pip install -q pandas pyyaml requests
+try:
     from google.colab import userdata; os.environ["TYPESAFE_API_KEY"] = userdata.get("TYPESAFE_API_KEY")
 except Exception: print("no TYPESAFE_API_KEY secret; only the heuristic baseline will run")
 !python bench/decider_eval.py --prompts prompts/pilot.csv --provider heuristic
