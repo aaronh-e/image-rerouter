@@ -260,11 +260,15 @@ Run a `--limit 6` smoke test first; then let each stage run in chunks (`--groups
 IN_COLAB = "google.colab" in sys.modules
 if IN_COLAB:
     from google.colab import drive; drive.mount("/content/drive")
-    WORK = "/content/drive/MyDrive/image-rerouter"      # results persist here between sessions
-    REPO_URL = ""   # paste your GitHub URL once pushed; empty = upload the zip the first time
+    WORK = "/content/drive/MyDrive/image-rerouter-git"  # code from GitHub; results persist here between sessions
+    REPO_URL = "https://github.com/aaronh-e/image-rerouter"   # empty = upload a zip of the code instead
+    OLD = "/content/drive/MyDrive/image-rerouter"       # the earlier zip-upload folder, if any
     if not os.path.exists(WORK):
         if REPO_URL:
             !git clone -q $REPO_URL $WORK
+            if os.path.exists(f"{OLD}/results"):   # bring earlier results along once (the old folder is left as is)
+                print(f"Copying results from {OLD} ...")
+                !cp -r "$OLD/results" "$WORK/"
         else:
             from google.colab import files
             import glob, shutil
@@ -364,7 +368,7 @@ plt.tight_layout(); plt.show()"""),
 import os, sys
 if "google.colab" in sys.modules and not os.path.exists("bench/decider_eval.py"):
     from google.colab import drive; drive.mount("/content/drive")
-    %cd /content/drive/MyDrive/image-rerouter
+    %cd /content/drive/MyDrive/image-rerouter-git
     !pip install -q pandas pyyaml requests
 try:
     from google.colab import userdata; os.environ["TYPESAFE_API_KEY"] = userdata.get("TYPESAFE_API_KEY")
