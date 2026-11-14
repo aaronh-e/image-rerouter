@@ -1,98 +1,117 @@
 # image-rerouter
 
-Can a cheap text-only decider route *parts of* image generation between a small and a
-large diffusion model, cutting GPU-seconds without a visible quality loss?
-Full plan: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Design notes, findings so far and open
-questions: [docs/NOTES.md](docs/NOTES.md).
+Can switching models halfway make AI image generation cheaper?
 
-**Models:** SDXL base 1.0 (large) and Segmind SSD-1B (small), both at fp16 with the
-fp16-fix VAE. **Methods:** Method 1 `s2l` = small model first, large finishes
-(T-Stitch order). Method 2 `l2s` = large first, small finishes (Hybrid SD order).
+Diffusion models make an image by starting from random noise and removing a little of it
+at each step. Our project uses 30 denoising steps. The early steps decide the layout and
+the later steps refine the detail. So we had a big model (SDXL) and a smaller, faster one
+(SSD-1B) split the steps, with one model handing its in-progress image to the other
+partway through. Then we measured how much cheaper each handoff made an image and how
+much quality dropped.
 
-## Quick start
+**Results website:** https://aaronh-e.github.io/image-rerouter/
+
+## Our findings (60-prompt pilot)
+
+- **A handoff can produce an image that is 20% cheaper, with no clear loss in quality.**
+  The big model does the first 12 steps and the small model does the last 18. The cost
+  of generation is GPU time, so cutting time cuts cost.
+- **The handoff beats fewer steps of the big model.** Running the big model alone for
+  24 steps saves about the same time but scores 0.14 lower on PickScore.
+- **The model that starts the handoff sets the layout and the ending model refines detail.**
+- **The best handoff depends on the type of prompt.** Small-model-first is worse for
+  composition and text prompts and better for dense ones. That's why the next step is a
+  router that classifies each prompt and picks the best handoff.
+
+The full plan is in [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Notes on decisions and results
+are in [docs/NOTES.md](docs/NOTES.md).
+
+## The two models
+
+- **SDXL base 1.0** is the big model (2.6B-parameter UNet). It's our quality benchmark.
+- **Segmind SSD-1B** is a distilled SDXL (1.3B). Each step takes about 35% less time.
+  It's our cost benchmark.
+
+SSD-1B keeps SDXL's text encoders and VAE, so both models work in the same latent space.
+That's what makes a handoff possible: one model can stop after any step and pass the
+latent to the other.
+
+We test the handoff both ways:
+- **Method 1, `s2l`:** small model starts, big model finishes (the order T-Stitch uses).
+- **Method 2, `l2s`:** big model starts, small model finishes (the order Hybrid SD uses).
+
+## Running it
+
+On a laptop (no GPU needed):
 
 ```bash
-pip install -r requirements-cpu.txt      # laptop: tests, prompts, compat check, plots
-python -m pytest -q tests                # everything below is exercised on CPU with --dry-run
-python bench/compat_check.py             # Level 1 format table from the Hub, no GPU
+pip install -r requirements-cpu.txt
+python -m pytest -q tests                # all tests run on CPU with fake models
+python bench/compat_check.py             # Level 1: checks the two models are compatible
 ```
 
-On a GPU box (Colab T4 or better):
+On a GPU (Colab T4 or better):
 
 ```bash
 pip install -r requirements.txt
-python bench/run.py --controls --prompts prompts/pilot.csv      # Level 2
-python bench/run.py --sweep    --prompts prompts/pilot.csv      # Level 3
-python bench/score.py --prompts prompts/pilot.csv               # adds quality columns
-python bench/plot.py                                          # charts + tables (metric = vqa_score)
-python bench/decider_eval.py --provider heuristic               # Level 4 baseline (offline)
+python bench/run.py --controls --prompts prompts/pilot.csv      # Level 2: baselines
+python bench/run.py --sweep    --prompts prompts/pilot.csv      # Level 3: every handoff
+python bench/score.py --prompts prompts/pilot.csv               # score the images
+python bench/plot.py                                            # charts and tables
+python bench/decider_eval.py --provider heuristic               # Level 4 with a keyword router
 TYPESAFE_API_KEY=... python bench/decider_eval.py               # Level 4 with Jev
 ```
 
-Or open the notebooks: `notebooks/model_handoff_test.ipynb` (Level 1) and
-`notebooks/colab_bench.ipynb` (Levels 2–4, results on Drive).
+Or use the notebooks: `notebooks/model_handoff_test.ipynb` for Level 1 and
+`notebooks/colab_bench.ipynb` for Levels 2 to 4 (results save to Drive).
 
-## The website (easiest way to try things)
+To rebuild the results website from a finished run:
 
 ```bash
-python app/app.py            # on a machine with a GPU; opens http://127.0.0.1:7860
-python app/app.py --demo     # any laptop: see the UI with fake images
-```
-On Colab, open `notebooks/colab_app.ipynb`, pick a T4 runtime, Run all, and click the public link it prints.
-Prompt box, Method 1 / Method 2 picker, switch-point slider, a Sweep tab, and every run logged to `results/app/log.csv`.
-
-## Layout
-
-```
-config.yaml                 every knob: models, steps, seeds, switch fractions, GPU price, scorers, decider
-prompts/pilot.csv           60 prompts, 10 per group, with machine-checkable `expected`
-prompts/full.csv            200 prompts (built by prompts/make_full.py; superset of pilot)
-rerouter/schedule.py        (direction, switch_fraction, steps) -> which model runs which steps  [no torch]
-rerouter/models.py          load SDXL + SSD-1B once; shared text encoders + VAE; two UNets on GPU
-rerouter/handoff.py         generate(): UNet swap via callback_on_step_end (or two-pipeline route)
-rerouter/decider.py         Jev typed questions -> profile -> (direction, switch_fraction); regex baseline
-rerouter/utils.py           config, git hash, prompt files, `expected` format, append-only results CSV
-bench/run.py                run controls / one setting / full sweep / router; resumable; errors logged as rows
-bench/score.py              VQAScore, PickScore, HPSv2 (opt), CLIPScore, OCR match + CER, OWLv2 object count, GenEval rules
-bench/plot.py               trade-off curves (% cost saved vs quality change), prompt-type heatmap, large-vs-small advantage, winners, order head-to-head
-bench/decider_eval.py       answer key from the sweep, 70/30 split, learn policy, evaluate router by lookup
-bench/compat_check.py       VAE/scheduler/weight-fingerprint table for model pairs
-app/app.py                  Gradio website: type a prompt, pick a method and switch point, see images + GPU-seconds
-notebooks/                  Level 1 handoff demo; Colab runner for Levels 2-4
-scripts/                    level2_controls.sh, level3_sweep.sh, level4_router.sh
-tests/                      CPU tests incl. a full dry-run of run -> score -> plot -> decider_eval
-results/                    results.csv (append-only), images/, plots/   [git-ignored]
-docs/                       compat_report.md, NOTES.md, make_notebooks.py
+python site/build_site.py --run path/to/results-folder
+python -m http.server 8781 --directory site     # preview at http://localhost:8781
 ```
 
-## Conventions that matter
+## Try a handoff yourself
 
-- **`switch_fraction`** is the fraction of the *total* steps run by the **first** model.
-  `s2l@0.4` with 30 steps: SSD-1B does steps 0–11, SDXL does 12–29. `s2l@0.0` equals
-  large-alone and `s2l@1.0` equals small-alone, so the sweep endpoints double as a
-  sanity check against the controls.
-- **Equal cost without interpolation:** cost is linear in steps, so `s2l@f` and
-  `l2s@(1-f)` run the same number of large and small steps. `bench/plot.py` reports this
-  head-to-head per group (`order_head_to_head_*.csv`).
-- **One row per image** in `results/results.csv`; the key is
-  `(prompt_id, seed, method, direction, switch_fraction, steps)`. Re-running a command
-  skips finished rows and retries error rows.
-- **Timing** is `torch.cuda.synchronize()` wall clock around the whole pipeline call,
-  after one warm-up run; peak memory is reset before each image.
-- **`expected` column:** `count=3;object=red cup;...` for composition,
-  `text=OPEN 24 HOURS` for text, empty otherwise.
+```bash
+python app/app.py            # needs a GPU, opens http://127.0.0.1:7860
+python app/app.py --demo     # any laptop, fake images
+```
 
-## Level checklist
+On Colab, open `notebooks/colab_app.ipynb`, pick a T4, run all, and click the public link.
+You type a prompt, pick a method and a switch point, and see the images and how long they took.
 
-| level | gate | where |
-|---|---|---|
-| 1 | clean handoff image each way, timing table, pair map | `notebooks/model_handoff_test.ipynb` -> `results/level1_*.{csv,png}` |
-| 2 | cost-vs-quality chart with the three controls | `scripts/level2_controls.sh` -> `results/plots/` |
-| 3 | both method curves + controls, per-group winners, beats control 3? | `scripts/level3_sweep.sh` -> `tradeoff_*.png`, `heatmap_*.png`, `advantage_*.md`, `success_*.md`, `order_head_to_head_*.csv` |
-| 4 | router point next to best fixed setting on held-out 30% | `scripts/level4_router.sh` -> `results/router_eval.md` |
+## What's where
 
-## Memory on a 15 GB T4
+```
+config.yaml           all the settings: models, steps, seeds, switch points, GPU prices, scorers
+prompts/pilot.csv     60 prompts, 10 per type
+prompts/full.csv      200 prompts (30-40 per type)
+rerouter/             the handoff itself, model loading, and the Jev router
+bench/                running, scoring, plotting, and evaluating the router
+app/                  the try-it-yourself app (Gradio)
+site/                 the results website
+notebooks/            Colab notebooks
+tests/                CPU tests, including a full fake run end to end
+docs/                 notes and the model compatibility report
+results/              outputs (not in git)
+```
 
-Both UNets stay resident (SDXL 5.1 GB + SSD-1B 2.7 GB) plus encoders and VAE, about 9.6 GB
-of weights. If you hit OOM at 1024², set `compute.attention_slicing: true` in
-`config.yaml`, or add `bank.pipe.vae.enable_tiling()` after loading.
+## A few rules we stuck to
+
+- **`switch_fraction`** is the share of the 30 steps run by the *first* model. `s2l@0.4`
+  means SSD-1B does steps 0-11 and SDXL does steps 12-29.
+- **Same everything else.** Every setting uses the same prompts, seeds, step count,
+  resolution and guidance. For a given prompt and seed, the only thing that changes is
+  which model runs each step.
+- **Results are append-only.** `results/results.csv` has one row per image, and rerunning
+  a command skips images that are already done.
+- **Cost comes from step counts.** Colab speed varies between sessions, so we time each
+  model's step once and work out each image's cost from how many steps each model ran.
+
+## Memory
+
+Both UNets stay on the GPU (SDXL 5.1 GB + SSD-1B 2.7 GB), about 9.6 GB with the encoders
+and VAE. If a 15 GB T4 runs out of memory at 1024x1024, set
+`compute.attention_slicing: true` in `config.yaml`.

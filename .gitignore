@@ -17,3 +17,6 @@ results/smoke_images/
 results/smoke_plots/
 site/data.json
 site/sprites/
+
+# local notes for Claude Code
+CLAUDE.md

@@ -40,6 +40,10 @@ p { margin: 0; }
 a { color: var(--large); }
 .lede { font-size: 1.12rem; color: var(--ink-2); max-width: 60ch; }
 .prose { max-width: 62ch; color: var(--ink-2); display: grid; gap: 10px; font-size: 1.05rem; }
+.why { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.why summary { cursor: pointer; padding: 10px 14px; font-weight: 600; color: var(--ink); }
+.why[open] { display: grid; gap: 10px; padding-bottom: 12px; }
+.why > p { margin: 0; padding-inline: 14px; color: var(--ink-2); }
 button, select, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--large); outline-offset: 2px; }
 section { padding-block: 56px; }
@@ -90,6 +94,24 @@ section { padding-block: 56px; }
 .how { display: grid; gap: 14px; margin-bottom: 40px; }
 .how .example { display: grid; gap: 8px; max-width: 560px; margin-top: 6px; }
 .how .example > div { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 12px; align-items: center; font-size: .92rem; color: var(--ink-2); }
+/* handoff illustration: noise -> big model -> handoff -> small model -> picture */
+#handoff .how { grid-template-columns: minmax(0, 1fr) minmax(0, 420px); grid-template-areas: "title flow" "text flow" "ex flow"; column-gap: 56px; align-items: start; align-content: start; }
+#handoff .how > h2 { grid-area: title; } #handoff .how > .prose { grid-area: text; } #handoff .how > .example { grid-area: ex; }
+.flow { grid-area: flow; margin: 0; display: grid; gap: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.flow-prompt { font-family: var(--font-display); font-weight: 500; margin-bottom: 14px; }
+.flow-row, .flow-run { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; align-items: center; }
+.flow-row p { display: grid; gap: 2px; color: var(--ink-2); font-size: .92rem; }
+.flow-row b { color: var(--ink); }
+.flow-img { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background-color: var(--surface-2); }
+.flow-img i { position: absolute; inset: 0; background-repeat: no-repeat; }
+.flow-img.noise, .flow-img.mid::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: cover; }
+.flow-img.mid i { filter: blur(7px) saturate(.8); inset: -12px; }
+.flow-img.mid::after { content: ""; position: absolute; inset: 0; opacity: .45; }
+.flow-run { padding-block: 6px; font-size: .92rem; color: var(--ink-2); }
+.flow-run i { justify-self: center; width: 8px; height: 56px; border-radius: 4px; position: relative; }
+.flow-run i::after { content: ""; position: absolute; left: 50%; bottom: -7px; translate: -50% 0; border: 8px solid transparent; border-top-color: inherit; border-bottom: 0; }
+.flow-run.large i { background: var(--large); border-color: var(--large); } .flow-run.small i { background: var(--small); border-color: var(--small); }
+.flow-run b.large { color: var(--large); } .flow-run b.small { color: var(--small); }
 
 /* explorer */
 .controls { display: grid; gap: 14px; margin-bottom: 18px; }
@@ -99,7 +121,7 @@ section { padding-block: 56px; }
 .chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .chip-btn:disabled { opacity: .4; cursor: not-allowed; }
 .pick { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.pick select { min-width: 0; flex: 1 1 320px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
+.pick select { min-width: 0; width: 0; flex: 1 1 320px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
 .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
 .seg button { border: 0; background: var(--surface); padding: 8px 12px; cursor: pointer; font-size: .92rem; }
 .seg button + button { border-left: 1px solid var(--line-2); }
@@ -175,7 +197,7 @@ section { padding-block: 56px; }
 .hit { fill: transparent; cursor: pointer; }
 .hit:focus { outline: none; }
 .hit:focus-visible { stroke: var(--large); stroke-width: 2; }
-.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; width: 260px; max-width: calc(100% - 8px); font-size: .86rem; display: grid; gap: 8px; }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; width: 300px; max-width: calc(100% - 8px); font-size: .86rem; display: grid; gap: 8px; }
 .tip b { font-size: .92rem; }
 .tip p { color: var(--ink-2); }
 .verdict { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; width: fit-content; }
@@ -197,15 +219,37 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td .rail { min-width: 140px; }
 
 /* method */
-.method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 36px; }
+.method-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 72ch; }
+/* prompt tree: all prompts -> 6 types -> seeds x settings -> images */
+.method-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 56px; align-items: start; }
+.ptree { margin: 0; position: sticky; top: 24px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 18px; font-size: .92rem; }
+.pt-node { border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); padding: 8px 12px; display: grid; gap: 2px; }
+.pt-node b { color: var(--ink); } .pt-node span { color: var(--ink-2); }
+.pt-node.total { border-color: var(--ink); }
+.ptree ul { list-style: none; margin: 0; padding: 8px 0 0 26px; display: grid; gap: 8px; }
+.ptree li { position: relative; }
+.ptree li::before { content: ""; position: absolute; left: -16px; top: -10px; bottom: -8px; border-left: 2px solid var(--line-2); }
+.ptree li:last-child::before { bottom: auto; height: 34px; }
+.ptree li::after { content: ""; position: absolute; left: -16px; top: 22px; width: 16px; border-top: 2px solid var(--line-2); }
+.pt-ex { font-style: italic; }
+.pt-step { margin: 0; padding: 10px 0; text-align: center; color: var(--ink-2); }
+.pt-step::before, .pt-step::after { content: ""; display: block; width: 2px; height: 14px; margin: 0 auto 6px; background: var(--line-2); }
+.pt-step::after { margin: 6px auto 0; height: 10px; width: 0; background: none; border: 7px solid transparent; border-top-color: var(--line-2); border-bottom: 0; }
+.ptree figcaption { margin-top: 12px; font-size: .85rem; color: var(--muted); }
 .method-grid div { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
 .method-grid h3 { font-size: 1rem; }
 .method-grid p { color: var(--ink-2); }
+.prose .metrics, .method-grid .metrics { margin: 4px 0 0; padding-left: 1.2em; display: grid; gap: 6px; color: var(--ink-2); }
+.prose .metrics b, .method-grid .metrics b { color: var(--ink); }
 footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--muted); font-size: .9rem; }
 .error { padding: 20px; border: 1px solid var(--bad); color: var(--bad); border-radius: 10px; }
 
 @media (max-width: 900px) {
   .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  #handoff .how { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "text" "ex" "flow"; }
+  .flow { max-width: 520px; }
+  .method-layout { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .ptree { position: static; max-width: 520px; }
   .compare { grid-template-columns: minmax(0, 1fr); }
   .board { grid-template-columns: minmax(0, 1fr); }
   .board-ref .tile { max-width: 260px; }
@@ -217,13 +261,20 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .how .example > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }
+/* edit mode (editors only) */
+.edit-btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: .9rem; }
+.edit-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.editing .editable { outline: 1px dashed var(--line-2); outline-offset: 3px; border-radius: 3px; cursor: text; }
+.editing .editable:focus { outline: 2px solid var(--large); }
+.editing .editable.edited { background: rgba(240, 190, 30, .2); }
+.edit-bar { position: fixed; left: 50%; bottom: 16px; translate: -50% 0; z-index: 20; max-width: calc(100% - 32px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow); font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <header class="top">
   <div class="wrap">
     <div class="mark"><span class="glyph" aria-hidden="true"><i style="background:var(--large)"></i><i style="background:var(--large)"></i><i style="background:var(--small)"></i></span>Image Model Re-Router</div>
-    <nav aria-label="Sections"><a href="#findings">Findings</a><a href="#how">How it works</a><a href="#explore">Compare images</a><a href="#results">Charts</a><a href="#method">Method</a></nav>
+    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#findings">Findings</a><a href="#explore">Compare images</a><a href="#results">Charts</a><a href="#method">Method</a></nav>
   </div>
 </header>
 
@@ -231,8 +282,8 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
   <section class="hero">
     <div class="wrap">
       <div class="hero-copy">
-        <h1>Can a small model finish a big model's image?</h1>
-        <p class="lede">An image model paints in 30 steps, starting from noise. We had a big model and a smaller, faster one share those steps to see how much time we could save before the pictures got worse.</p>
+        <h1>Can switching models halfway make AI image generation cheaper?</h1>
+        <p class="lede">Diffusion models generate an image by starting from pure random noise and removing a little of it at each step. Our project uses 30 denoising steps. The early diffusion steps decide the image layout. The later diffusion steps refine the detail of the image. We had a big model and a smaller, faster one split the diffusion steps, with one model handing its in-progress image off to the other one partway through. Then we measured how much cheaper each handoff made an image, and how much image quality dropped as a result.</p>
         <a class="cta" href="#explore">Compare the images</a>
       </div>
       <div>
@@ -242,29 +293,36 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
     </div>
   </section>
 
-  <section class="band" id="findings">
+  <section class="band" id="handoff">
     <div class="wrap">
-      <div class="section-head"><h2>What we found</h2></div>
+      <div class="how" style="margin-bottom:0">
+        <h2>How a handoff works</h2>
+        <div class="prose" id="how-text"></div>
+        <div class="example" id="how-example"></div>
+        <figure class="flow" id="how-flow"></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="findings">
+    <div class="wrap">
+      <div class="section-head"><h2>Our findings</h2></div>
       <ul class="findings" id="findings-list"></ul>
     </div>
   </section>
 
-  <section id="how">
+  <section class="band" id="how">
     <div class="wrap">
-      <div class="how">
-        <h2>How a handoff works</h2>
-        <div class="prose" id="how-text"></div>
-        <div class="example" id="how-example"></div>
-      </div>
       <div class="section-head" id="explore"><h2>Compare the images</h2>
-        <p class="lede">Pick a prompt, then click any picture to put it next to the big model's. Drag across the large image to swipe between them.</p></div>
+        <p class="lede">Pick a prompt, then click any picture to put it next to the big model's. Drag across the large image to swipe between them.</p>
+        <p class="measure">The left side starts on the big model. The right side starts on the most efficient handoff for that type of prompt: the cheapest handoff whose average preference score stays within 0.1 of the big model's.</p></div>
       <div class="controls">
         <div class="chips" id="group-chips" role="group" aria-label="Type of prompt"></div>
         <div class="pick">
           <select id="prompt-select" aria-label="Prompt"></select>
           <button class="icon-btn" id="prev-prompt" type="button">&#8592; Previous</button>
           <button class="icon-btn" id="next-prompt" type="button">Next &#8594;</button>
-          <span class="seg" role="group" aria-label="Starting noise" id="seed-seg"></span>
+          <span class="seg" role="group" aria-label="Seed" id="seed-seg"></span>
         </div>
       </div>
       <div class="prompt-box"><q id="prompt-text"></q><div class="expect" id="prompt-expect"></div></div>
@@ -288,7 +346,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
     </div>
   </section>
 
-  <section class="band" id="results">
+  <section id="results">
     <div class="wrap">
       <div class="section-head"><h2>How much quality each saving costs</h2>
         <p class="lede">Each dot is one setting, compared with the big model on the same prompts. Up means better pictures. Right means cheaper. The bars show the likely range.</p></div>
@@ -311,14 +369,26 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
     </div>
   </section>
 
-  <section id="method">
+  <section class="band" id="method">
     <div class="wrap">
-      <div class="section-head"><h2>How we measured</h2></div>
-      <div class="method-grid" id="method-grid"></div>
+      <div class="section-head"><h2>Our methodology</h2></div>
+      <div class="method-layout">
+        <div class="method-grid" id="method-grid"></div>
+        <figure class="ptree" id="prompt-tree"></figure>
+      </div>
+      <details class="why" id="prompt-types" style="margin-top:8px">
+        <summary>What are the 6 types of prompt?</summary>
+        <p><b>Composition.</b> These prompts ask for a set number of objects in particular colours and positions, such as “three red cups to the left of a blue plate.” They test whether the model gets the layout right.</p>
+        <p><b>Text.</b> These prompts ask for specific words written in the image, such as a shop sign that says “OPEN 24 HOURS.” They test whether the words come out spelled correctly and readable.</p>
+        <p><b>Hands &amp; faces.</b> These prompts are close-up photos of people, such as a hand holding an apple with all five fingers visible. Hands and faces are where image models most often make mistakes that people notice.</p>
+        <p><b>Product.</b> These prompts are realistic product photos, such as an espresso machine on a marble counter. They test clean surfaces, lighting and fine detail.</p>
+        <p><b>Stylized.</b> These prompts ask for a particular art style, such as a watercolour painting, pixel art or a woodblock print. They test whether the model keeps the style consistent across the whole image.</p>
+        <p><b>Dense.</b> These are long prompts that describe a busy scene with many objects, such as a cabin kitchen with a kettle, three bowls, a cat and a frosted window. They test whether the model includes everything the prompt asks for.</p>
+      </details>
     </div>
   </section>
 </main>
-<footer><div class="wrap" id="footer-text">Image Model Re-Router, a pilot study.</div></footer>
+<footer><div class="wrap" id="footer-text">By Aaron He and Alice Yi.</div></footer>
 
 <script>
 "use strict";
@@ -327,6 +397,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 let D, S, SEC;                         // data, settings by id, seconds per step
 const HERO = "l2s@0.4";                // the setting the story leads with
 const HERO_PROMPT = "comp_04";
+const LINKEDIN = { aaron: "https://www.linkedin.com/in/aaronjhe", alice: "https://www.linkedin.com/in/alice-yi-219772359/" };
 const st = { group: "composition", prompt: HERO_PROMPT, seed: 42, a: "large@30", b: HERO, metric: "pick_score", cgroup: "all", table: false };
 const METRIC = {
   pick_score: { k: 1, d: 2, axis: "Change in PickScore", what: "PickScore predicts which image people would prefer." },
@@ -405,44 +476,93 @@ function renderStory() {
     <div class="card">${imgDiv(key, id)}<div class="cap"><b>${esc(name(id))}</b>${rail(id)}<span>${id === HERO ? `${secs(id)}, ${pct0(S[id].saved)} less time` : secs(id)}</span></div></div>`).join("");
   paintAll($("#hero-duo"));
 
-  const cheap = "l2s@0.2", cheapSmall = S[cheap].segments[1][2] - S[cheap].segments[1][1];
   const findings = [
-    [`${pct0(S[HERO].saved)} less time, with no clear loss in quality.`,
-     `Letting the small model do the last ${handoffSteps} of ${m.steps} steps saved ${pct(S[HERO].saved)} of the time. The quality score moved by ${fmtD(h.mean, "pick_score")}, which is within the noise.`],
-    ["That beats stopping the big model early.",
-     `Running the big model for ${S[match.control].segments[0][2]} steps saves about the same time but scores ${fmtD(fewer.mean, "pick_score").replace("−", "")} lower. The handoff came out ahead on ${match.better} of ${match.n} prompts.`],
-    ["Whichever model starts sets the layout.",
-     "The early steps decide what goes where. If the small model starts, you get its composition, and the big model only polishes it."],
-    ["Saving 30% still costs quality.",
-     `Giving the small model ${cheapSmall} of the ${m.steps} steps saves ${pct0(S[cheap].saved)}, but quality drops noticeably. The small model alone saves ${pct0(S["small@30"].saved)} and drops further.`],
+    [`A handoff can produce an image that is ${pct0(S[HERO].saved)} cheaper, with no clear loss in quality.`,
+     `Letting the small model do the last ${handoffSteps} of ${m.steps} steps cut the GPU time per image by ${pct(S[HERO].saved)}. The cost of generation is GPU time, so cutting time cuts cost. PickScore (a score that predicts which image people would prefer) dropped by ${Math.abs(h.mean).toFixed(2)} with the handoff, which is within the noise.`],
+    ["The handoff beats fewer steps of the big diffusion model.",
+     `The simplest way to save GPU time is to run the big model alone for fewer steps. Running the big model alone for ${S[match.control].segments[0][2]} steps instead of ${m.steps} steps saves about the same GPU time, but scores ${fmtD(fewer.mean, "pick_score").replace("−", "")} lower on PickScore. The handoff scored higher on ${match.better} of ${match.n} prompts.`],
+    ["The model that starts the handoff sets the layout and the ending model refines detail.",
+     "The early diffusion steps determine what goes where. If the small model starts the diffusion process, you get the composition it produces and the big model polishes it."],
+    ["The best handoff depends on the type of prompt.",
+     "When the small model started, composition and text prompts came out noticeably worse on the preference score. Dense prompts, with long descriptions of busy scenes, came out noticeably better. That's why our next step is a router that classifies prompts and picks the best handoff."],
   ];
   $("#findings-list").innerHTML = findings.map(([t, d]) => `<li><b>${esc(t)}</b><p>${esc(d)}</p></li>`).join("");
 
   $("#how-text").innerHTML = `
-    <p>The big model is SDXL. The small model, SSD-1B, is a slimmed-down copy of it that takes ${pct0(1 - SEC.small / SEC.large)} less time per step.</p>
-    <p>Both work on the same internal version of the picture, so one can stop and the other carries on from exactly the same point.</p>
-    <p>In the bars, each block is one step: <span class="sw large"></span> big model, <span class="sw small"></span> small model. Faster steps are narrower, so a shorter bar means a cheaper picture. The grey end is the time to read the prompt and save the image.</p>`;
-  $("#how-example").innerHTML = ["large@30", HERO, "s2l@0.6"].map(id => `<div><span>${esc(name(id))}</span>${rail(id)}</div>`).join("");
+    <p>The big model is SDXL, whose denoising network has 2.6 billion parameters. It is our quality benchmark: the best pictures, at the highest cost.</p>
+    <p>The small model is SSD-1B, a distilled version of SDXL with 1.3 billion parameters: the same design with some layers removed. It is our cost benchmark: the cheapest pictures, at lower quality. Each SSD-1B step takes ${pct0(1 - SEC.small / SEC.large)} less time.</p>
+    <details class="why"><summary>Why is a model handoff possible?</summary>
+      <p>Both models work on a compressed version of the image called a latent, a 128×128 grid that a decoder turns into the 1024×1024 picture at the end. At each step, the model looks at the latent and the prompt, predicts the noise still left in it, and removes some of that noise. SSD-1B keeps SDXL's text encoders and image decoder, so both models read the prompt the same way and their latents mean the same thing. That means one model can stop after any step and pass the latent to the other one, which carries on as if it had done the earlier steps itself. The prompt, step schedule and guidance never change.</p>
+    </details>
+    <p>Because early steps set the layout and late steps add detail, the order matters. We tested handoffs in both directions:</p>
+    <ul class="metrics">
+      <li><b>Small to big:</b> the small model runs the first steps, then hands off to the big model to finish.</li>
+      <li><b>Big to small:</b> the big model runs the first steps, then hands off to the small model to finish.</li>
+    </ul>
+    <p>In the bars, each block is one step: <span class="sw large"></span> big model, <span class="sw small"></span> small model. The faster SSD-1B steps are shown as narrower blocks, so a shorter total bar means a cheaper picture. The grey end is the time to read the prompt and save the image.</p>`;
+  const k = S[HERO].segments[0][2], tileCSS = spriteCSS(key, HERO).replaceAll('"', "'");
+  $("#how-flow").innerHTML = `
+    <p class="flow-prompt">“${esc(prompt.text)}”</p>
+    <div class="flow-row"><div class="flow-img noise"></div><p><b>Start: random noise</b>The seed sets the noise, so every setting starts from the same noise.</p></div>
+    <div class="flow-run large"><i></i><span><b class="large">SDXL, the big model,</b> runs steps 1 to ${k}. These steps set the layout.</span></div>
+    <div class="flow-row"><div class="flow-img mid"><i style="${tileCSS}"></i></div><p><b>Handoff after step ${k}</b>The big model passes its in-progress latent to the small model.</p></div>
+    <div class="flow-run small"><i></i><span><b class="small">SSD-1B, the small model,</b> runs steps ${k + 1} to ${m.steps}. These steps add the detail.</span></div>
+    <div class="flow-row"><div class="flow-img"><i style="${tileCSS}"></i></div><p><b>Finished picture</b>The decoder turns the latent into the 1024×1024 image. It took ${pct0(S[HERO].saved)} less time than the big model alone.</p></div>`;
+  $("#how-example").innerHTML =["large@30", HERO, "s2l@0.6"].map(id => `<div><span>${esc(name(id))}</span>${rail(id)}</div>`).join("");
 
   const items = [
-    ["What we made", `${m.n_prompts} prompts of 6 types, each started from ${m.seeds.length} different noise patterns and run with all 13 settings: ${m.n_images.toLocaleString()} images at 1024×1024. Everything except which model ran each step stayed the same.`],
-    ["Hardware", `All images came from one session on an ${esc(m.gpu)} on ${m.run_start.slice(0, 10)}.`],
-    ["Time", `Each image's time comes from its steps: ${SEC.large.toFixed(3)} s per big-model step, ${SEC.small.toFixed(3)} s per small-model step, and ${SEC.fixed.toFixed(2)} s to read the prompt and save the image. Measured times matched this within 0.2%.`],
-    ["Quality", "PickScore predicts which image people would prefer. VQAScore asks a vision model whether the image shows the prompt. CLIPScore measures how well the image matches the prompt's words. For text prompts, OCR reads the text and checks the words."],
-    ["Ranges", "Each setting is compared with the big model on the same prompt and starting noise. The ranges are 95% confidence intervals across prompts. When a range includes zero, we call it no clear change."],
-    ["Limits", "This is a pilot with 10 prompts per type, so results for a single type are rough. The scores are automatic and can miss what people notice. Object counts have not been scored yet."],
-    ["Project names", "In the project code, small-model-first is Method 1 (the T-Stitch order) and big-model-first is Method 2 (the Hybrid SD order)."],
+    ["What we made", `We wrote ${m.n_prompts} prompts, split across the 6 types of prompt. We ran each prompt with ${m.seeds.length} different seeds (${m.seeds.join(" and ")}), and with all 13 settings. The seed sets the random noise the image starts from, so the same prompt and seed always start from the same noise. That gave ${m.n_images.toLocaleString()} images, each 1024×1024. For a given prompt and seed, the only thing that changed was which model ran each step.`],
+    ["Hardware", `We made all the images in one session on an ${esc(m.gpu)} GPU on ${m.run_start.slice(0, 10)}.`],
+    ["Time", `We worked out each image's time from its steps. A big-model step takes ${SEC.large.toFixed(3)} seconds, a small-model step takes ${SEC.small.toFixed(3)} seconds, and reading the prompt and saving the image takes ${SEC.fixed.toFixed(2)} seconds. When we checked these numbers against the measured times, they matched within 0.2%.`],
+    ["Quality", `<p>We scored every image automatically in four ways.</p>
+      <ul class="metrics">
+        <li><b>PickScore</b> is a model trained to predict which of two images people would prefer.</li>
+        <li><b>VQAScore</b> asks a vision model whether the image shows what the prompt describes.</li>
+        <li><b>CLIPScore</b> measures how closely the image matches the words in the prompt.</li>
+        <li><b>Text accuracy</b> reads the words in the image with OCR and checks that they match the prompt. It only applies to the text prompts.</li>
+      </ul>`],
+    ["How sure we are", "For each image, we took its score and subtracted the big model's score for the same prompt and seed. That shows how much the setting helped or hurt that one picture. We then averaged these differences across prompts. With only a few dozen prompts, that average is an estimate, so the bars on the charts show the range where the true average most likely falls (a 95% confidence interval). For example, a range of −0.11 to +0.06 means the setting could be a little worse or a little better than the big model alone. We can't tell which, so we call it “no clear change.” If the whole range is below zero, the setting is clearly worse. If the whole range is above zero, it is clearly better."],
+    ["Limits", "This is a pilot study with only 10 prompts of each type, so the results for any single type are rough. The scores are automatic, so they can miss problems that a person would notice. We have not yet scored whether the images show the right number of objects."],
+    ["Next steps", `<ol class="metrics">
+        <li><b>Run more prompts.</b> The pilot used 60 prompts, only 10 of each type. Next we will run the full set of 200 prompts, with 30 to 40 of each type. That will make the results for each type much more reliable.</li>
+        <li><b>Run GenEval.</b> GenEval is a standard benchmark of 553 prompts that checks whether an image has the right objects, counts, colours and positions. Running it tests the handoffs on a much larger set of prompts that is widely used in research.</li>
+        <li><b>Build a router that picks the handoff.</b> We will build a decision router using Jev, a System One model from TypeSafe. When someone types a prompt, it will decide which of the 6 types the prompt belongs to. It will then pick the handoff that worked best for that type, so each prompt gets the cheapest setting that keeps the quality.</li>
+      </ol>`],
+    ["Project names", "In the project code, the small-model-first order is called Method 1, after T-Stitch, which used that order. The big-model-first order is called Method 2, after Hybrid SD, which used that order."],
   ];
-  $("#method-grid").innerHTML = items.map(([t, p]) => `<div><h3>${t}</h3><p>${p}</p></div>`).join("");
-  $("#footer-text").textContent = `Image Model Re-Router, a pilot study. ${m.n_images.toLocaleString()} images made on ${m.run_start.slice(0, 10)}.`;
+  $("#method-grid").innerHTML = items.map(([t, p]) => `<div><h3>${t}</h3>${p.startsWith("<") ? p : `<p>${p}</p>`}</div>`).join("");
+  $("#method-grid").firstElementChild.append($("#prompt-types"));
+  const fam = f => D.settings.filter(s => s.family === f);
+  const switches = f => fam(f).map(s => s.segments[0][2]).join(", ");
+  const branches = [
+    ["large", "Big model, all 30 steps", "The quality benchmark. Every other setting is compared with this one.", 1],
+    ["control", "Big model, fewer steps", `${fam("fewer").map(s => s.segments[0][2]).join(", ")} steps. The shortcut a handoff has to beat.`, fam("fewer").length],
+    ["small", "Small model, all 30 steps", "The cost benchmark.", 1],
+    ["large", "Big to small handoffs", `The big model starts and hands off after step ${switches("large_first")}.`, fam("large_first").length],
+    ["small", "Small to big handoffs", `The small model starts and hands off after step ${switches("small_first")}.`, fam("small_first").length],
+  ];
+  $("#prompt-tree").innerHTML = `
+    <div class="pt-node"><b>${m.n_prompts} prompts</b><span>${D.groups.length} types × ${m.n_prompts / D.groups.length} prompts, each run with ${m.seeds.length} seeds</span></div>
+    <ul>${branches.map(([c, t, d, n]) => `<li class="pt-node"><b><span class="sw ${c}"></span> ${t}: ${n} setting${n > 1 ? "s" : ""}</b><span>${d}</span></li>`).join("")}</ul>
+    <p class="pt-step">${D.settings.length} settings for each prompt</p>
+    <div class="pt-node total"><b>${m.n_images.toLocaleString()} images</b><span>${m.n_prompts} prompts × ${m.seeds.length} seeds × ${D.settings.length} settings</span></div>`;  $("#footer-text").innerHTML = `By <a href="${LINKEDIN.aaron}">Aaron He</a> and <a href="${LINKEDIN.alice}">Alice Yi</a>.`;
 }
 
 /* ---------- explorer ---------- */
+// Most efficient handoff for a prompt type: the cheapest one whose average PickScore is
+// within 0.1 of the big model's and not clearly worse. Ties go to the higher score.
+const MAX_DROP = 0.1;
+function bestFor(group) {
+  const sum = D.summary.pick_score[group].settings;
+  const ok = [...ROWS[1].ids, ...ROWS[2].ids].filter(id => sum[id] && sum[id].mean >= -MAX_DROP && sum[id].hi >= 0);
+  ok.sort((x, y) => S[y].saved - S[x].saved || sum[y].mean - sum[x].mean);
+  return ok[0] || HERO;
+}
 const promptsIn = g => D.prompts.filter(p => p.group === g);
 function renderControls() {
   $("#group-chips").innerHTML = D.groups.map(g => `<button class="chip-btn" type="button" data-g="${g.id}" aria-pressed="${g.id === st.group}">${esc(g.label)}</button>`).join("");
-  $("#prompt-select").innerHTML = promptsIn(st.group).map(p => `<option value="${p.id}"${p.id === st.prompt ? " selected" : ""}>${esc(p.text)}</option>`).join("");
-  $("#seed-seg").innerHTML = D.meta.seeds.map((s, i) => `<button type="button" data-seed="${s}" aria-pressed="${s === st.seed}" title="Seed ${s}">Version ${i + 1}</button>`).join("");
+  $("#prompt-select").innerHTML = promptsIn(st.group).map(p => `<option value="${p.id}"${p.id === st.prompt ? " selected" : ""}>${esc(p.text.length > 80 ? p.text.slice(0, 77).trimEnd() + "…" : p.text)}</option>`).join("");
+  $("#seed-seg").innerHTML = D.meta.seeds.map((s, i) => `<button type="button" data-seed="${s}" aria-pressed="${s === st.seed}" >Seed ${s}</button>`).join("");
 }
 function expectText(e) {
   if (!e) return "";
@@ -455,7 +575,12 @@ const scoreOf = id => D.images[spriteKey(st.prompt, st.seed)][S[id].i];
 function sideCard(side, id) {
   const sc = scoreOf(id), ref = scoreOf("large@30"), isRef = id === "large@30";
   const d = (v, r, m) => { if (isRef) return ""; const x = v - r, cls = x > 0 ? "delta-up" : x < 0 ? "delta-down" : ""; return ` <span class="${cls}">(${fmtD(x, m)})</span>`; };
-  const opts = D.settings.map(s => `<option value="${s.id}"${s.id === id ? " selected" : ""}>${esc(name(s.id))}</option>`).join("");
+  const opt = o => `<option value="${o}"${o === id ? " selected" : ""}>${esc(name(o))}${o === "large@30" ? ", all 30 steps (full price)" : `, ${pct0(S[o].saved)} cheaper`}</option>`;
+  const opts = [
+    ["Handoff: big model starts, small model finishes", ROWS[1].ids],
+    ["Handoff: small model starts, big model finishes", ROWS[2].ids],
+    ["No handoff: one model the whole way", ["large@30", ...ROWS[0].ids]],
+  ].map(([label, ids]) => `<optgroup label="${label}">${ids.map(opt).join("")}</optgroup>`).join("");
   const text = sc[3] === null ? "" : `<dt>Text it wrote</dt><dd>${sc[4] ? `“${esc(sc[4])}”` : "none found"} ${sc[3] ? "✓" : "✗"}</dd>`;
   return `<div class="head"><span>${side}</span><select data-side="${side === "Left" ? "a" : "b"}" aria-label="${side} image">${opts}</select></div>
     ${rail(id, "tall")}
@@ -486,7 +611,7 @@ function renderExplorer() {
   [list[i + 1], list[i - 1]].filter(Boolean).forEach(q => loadSprite(spriteKey(q.id, st.seed)));
 }
 function bindExplorer() {
-  $("#group-chips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.group = b.dataset.g; st.prompt = promptsIn(st.group)[0].id; renderControls(); renderExplorer(); });
+  $("#group-chips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.group = b.dataset.g; st.prompt = promptsIn(st.group)[0].id; st.a = "large@30"; st.b = bestFor(st.group); renderControls(); renderExplorer(); });
   $("#prompt-select").addEventListener("change", e => { st.prompt = e.target.value; renderExplorer(); });
   $("#seed-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.seed = +b.dataset.seed; renderExplorer(); });
   const step = d => { const list = promptsIn(st.group), i = list.findIndex(x => x.id === st.prompt); st.prompt = list[(i + d + list.length) % list.length].id; $("#prompt-select").value = st.prompt; renderExplorer(); };
@@ -584,12 +709,16 @@ function chartSVG(W, metric, group, compact, uid) {
   return { svg: `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(label)}">${g}</svg>`, pts };
 }
 function tipHTML(id, metric, group) {
-  if (id === "large@30") return `<b>Big model only</b>${rail(id)}<p>${secs(id)} per image. Every other setting is compared with this one.</p>`;
-  const r = D.summary[metric][group].settings[id];
-  const pref = metric === "pick_score" ? `<p>People would pick the big model's image ${Math.round(100 / (1 + Math.exp(r.mean)))}% of the time.</p>` : "";
+  if (id === "large@30") return `<b>Big model only</b>${rail(id)}<p>Each image takes ${secs(id)}. This is the benchmark: every other dot is compared with it.</p>`;
+  const r = D.summary[metric][group].settings[id], label = D.metrics.find(x => x.id === metric).label;
+  const why = { better: "Even the low end of that range is an improvement, so this setting is clearly better than the big model alone.",
+                worse: "Even the high end of that range is a drop, so this setting is clearly worse than the big model alone.",
+                same: "That range runs from a little worse to a little better, so we can't tell whether this setting helps or hurts." }[verdictOf(r)];
+  const pref = metric === "pick_score" ? `<p>PickScore predicts that people would choose the big model's image over this one ${Math.round(100 / (1 + Math.exp(r.mean)))}% of the time.</p>` : "";
   return `<b>${esc(name(id))}</b>${rail(id)}
-    <p>${secs(id)} per image, ${pct(S[id].saved)} less time. ${METRIC[metric].axis}: ${fmtD(r.mean, metric)}, likely between ${fmtRange(r, metric)}.</p>
-    <p>Better on ${r.better} of ${r.n} prompts, worse on ${r.worse}.</p>${pref}${verdictHTML(r)}`;
+    <p>Each image takes ${secs(id)}, which is ${pct0(S[id].saved)} cheaper than the big model alone.</p>
+    <p>Compared with the big model alone, its ${label} changed by ${fmtD(r.mean, metric)} on average. The true change is most likely between ${fmtRange(r, metric)}.</p>
+    <p>It scored higher on ${r.better} of the ${r.n} prompts and lower on ${r.worse}.</p>${pref}${verdictHTML(r)}<p>${why}</p>`;
 }
 function drawChart(el, metric, group, compact, uid) {
   const W = Math.max(280, Math.floor(el.clientWidth));
@@ -649,11 +778,64 @@ function bindCharts() {
   new ResizeObserver(() => { const nw = $("#main-chart").clientWidth; if (Math.abs(nw - w) > 4) { w = nw; renderCharts(); } }).observe($("#main-chart"));
 }
 
+/* ---------- edit mode: editors change text in place; each change is saved to the db "edits"
+   collection (before/after text) for Claude to apply to this file. Not shown to other viewers. ---------- */
+const EDIT_SEL = "#hero-prompt, main h1, main h2, main .lede, .prose p, .prose li, .why > p, .flow-row p, .flow-run span, .findings b, .findings p, .section-head p, .measure, .method-grid h3, .method-grid p, .method-grid li, .pt-node b, .pt-node > span, .pt-step";
+const hashText = s => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.codePointAt(0)) >>> 0; return "t" + h.toString(36); };
+async function initEditing() {
+  if (!window.claude) return;
+  const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!db || !user || !(await user.canEdit())) return;
+  const col = db.collection("edits"), saved = new Map();
+  let on = false, els = [];
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "edit-btn"; btn.textContent = "Edit text";
+  $(".top .wrap").append(btn);
+  const bar = document.createElement("div"); bar.className = "edit-bar"; bar.hidden = true; document.body.append(bar);
+  const status = (msg = "") => { bar.textContent = `Editing: click any text to change it. ${saved.size} change${saved.size === 1 ? "" : "s"} saved for Claude to apply.${msg ? " " + msg : ""}`; };
+  const show = el => { const s = saved.get(el.dataset.ek); el.classList.toggle("edited", !!s); if (s) el.textContent = s.after; };
+  col.onSnapshot(snap => {
+    saved.clear(); snap.docs.forEach(d => saved.set(d.id, d.data()));
+    if (on) { els.forEach(el => { if (el !== document.activeElement) show(el); }); status(); }
+  }, () => status("Saving is unavailable right now."));
+  async function commit(el) {
+    const before = el.dataset.before, after = el.innerText.replace(/\s+/g, " ").trim(), key = el.dataset.ek;
+    const prev = saved.get(key);
+    try {
+      if (after === before || !after) { if (prev) await col.doc(key).delete(); el.innerHTML = el._orig; el.classList.remove("edited"); }
+      else if (!prev || prev.after !== after) await col.doc(key).set({ before, after, section: el.closest("section")?.id || "hero", updated: Date.now() });
+      status("Saved.");
+    } catch (e) { status(`Not saved (${e.code || e.message}).`); }
+  }
+  btn.addEventListener("click", () => {
+    on = !on; btn.textContent = on ? "Done editing" : "Edit text"; btn.setAttribute("aria-pressed", on);
+    document.body.classList.toggle("editing", on); bar.hidden = !on;
+    if (on) {
+      const all = [...document.querySelectorAll(EDIT_SEL)].filter(el => !el.closest(".controls, .tip, .compare, .board, .chart, table"));
+      els = all.filter(el => !all.some(o => o !== el && el.contains(o)));
+      for (const el of els) {
+        el._orig = el.innerHTML; el.dataset.before = el.innerText.replace(/\s+/g, " ").trim(); el.dataset.ek = hashText(el.dataset.before);
+        el.classList.add("editable"); el.contentEditable = "plaintext-only";
+        if (el.contentEditable !== "plaintext-only") el.contentEditable = "true";
+        el.onblur = () => commit(el);
+        el.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); el.blur(); } };
+        show(el);
+      }
+      status();
+    } else {
+      for (const el of els) { el.removeAttribute("contenteditable"); el.classList.remove("editable", "edited"); el.innerHTML = el._orig; el.onblur = el.onkeydown = null; }
+      els = [];
+    }
+  });
+}
+
 /* ---------- start ---------- */
 fetch("data.json").then(r => { if (!r.ok) throw new Error(`data.json: HTTP ${r.status}`); return r.json(); }).then(data => {
   D = data; SEC = D.meta.step_seconds;
   S = Object.fromEntries(D.settings.map((s, i) => [s.id, { ...s, i }]));
+  st.b = bestFor(st.group);
   renderStory(); renderControls(); renderExplorer(); bindExplorer(); renderLegend(); renderCharts(); bindCharts();
+  initEditing();
 }).catch(err => {
   $("main").insertAdjacentHTML("afterbegin", `<div class="wrap" style="padding-block:24px"><div class="error">The results did not load (${esc(err.message)}). Reload the page to try again.</div></div>`);
 });
