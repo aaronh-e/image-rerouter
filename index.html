@@ -82,7 +82,7 @@ section { padding-block: 56px; }
 .rail.tall { height: 16px; }
 .rail.thin { height: 6px; }
 .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -1px; }
-.sw.large { background: var(--large); } .sw.small { background: var(--small); } .sw.fixed { background: var(--fixed); } .sw.control { background: var(--control); }
+.sw.large { background: var(--large); } .sw.small { background: var(--small); } .sw.fixed { background: var(--fixed); } .sw.control { background: var(--control); } .sw.ink { background: var(--ink); }
 
 /* findings */
 .findings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
@@ -134,6 +134,15 @@ section { padding-block: 56px; }
 .expect code { font-family: var(--font-mono); font-size: .9rem; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
 
 .compare { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; margin: 22px 0 30px; align-items: start; }
+.view { display: grid; gap: 10px; min-width: 0; }
+.view-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: .9rem; color: var(--ink-2); }
+.swipe canvas.diff { position: absolute; inset: 0; width: 100%; height: 100%; }
+.swipe[data-view="diff"] :is(.layer, .divider, .knob, .tag, input[type="range"]) { display: none; }
+.swipe:not([data-view="diff"]) canvas.diff { display: none; }
+.diff-tools { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: .9rem; color: var(--ink-2); }
+.diff-tools label { display: inline-flex; align-items: center; gap: 8px; }
+.diff-tools input[type="range"] { width: 110px; }
+.diff-stat { font-variant-numeric: tabular-nums; }
 .swipe { position: relative; aspect-ratio: 1; width: 100%; max-width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface-2); --x: 50%; box-shadow: var(--shadow); }
 .swipe .layer { position: absolute; inset: 0; background-repeat: no-repeat; transition: opacity .2s; }
 .swipe .layer.b { clip-path: inset(0 0 0 var(--x)); }
@@ -141,12 +150,14 @@ section { padding-block: 56px; }
 .swipe .knob { position: absolute; top: 50%; left: var(--x); width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; background: var(--on-image); color: #10151e; display: grid; place-items: center; font-size: .8rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.3); pointer-events: none; }
 .swipe input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
 .swipe:focus-within { outline: 2px solid var(--large); outline-offset: 3px; }
-.badge { position: absolute; top: 10px; max-width: 45%; font-size: .82rem; font-weight: 500; background: rgba(16,21,30,.74); color: #ffffff; padding: 3px 9px; border-radius: 6px; pointer-events: none; }
-.badge.a { left: 10px; } .badge.b { right: 10px; text-align: right; }
+.tag { position: absolute; top: 10px; font-size: .84rem; font-weight: 600; background: rgba(16,21,30,.8); color: #ffffff; padding: 5px 10px; border-radius: 7px; pointer-events: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.tag .sw { flex: 0 0 auto; box-shadow: 0 0 0 1.5px #ffffff; }
+.tag.score { top: auto; bottom: 10px; font-size: .9rem; }
+.tag .ok { color: #7ee08f; } .tag .no { color: #ff9b9b; }
 .side { display: grid; gap: 14px; min-width: 0; }
-.side .card { padding: 16px; display: grid; gap: 12px; }
+.side .card { padding: 16px; display: grid; gap: 12px; border-left: 4px solid var(--side-c, var(--line-2)); }
 .side .head { display: flex; gap: 10px; align-items: center; }
-.side .head span { font-weight: 600; flex: 0 0 auto; }
+.side .head > span { font-weight: 600; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; }
 .side select { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
 .facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; }
 .facts dt { color: var(--ink-2); }
@@ -197,9 +208,15 @@ section { padding-block: 56px; }
 .hit { fill: transparent; cursor: pointer; }
 .hit:focus { outline: none; }
 .hit:focus-visible { stroke: var(--large); stroke-width: 2; }
+.hit.pinned { stroke: var(--ink); stroke-width: 2; }
 .tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; width: 300px; max-width: calc(100% - 8px); font-size: .86rem; display: grid; gap: 8px; }
 .tip b { font-size: .92rem; }
 .tip p { color: var(--ink-2); }
+.chart-row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.tip-panel { border: 1px solid var(--line-2); border-radius: 10px; background: var(--surface-2); padding: 12px 14px; font-size: .86rem; display: grid; gap: 8px; min-height: 120px; }
+.tip-panel b { font-size: .92rem; }
+.tip-panel p { color: var(--ink-2); }
+.tip-panel .hint { color: var(--muted); }
 .verdict { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; width: fit-content; }
 .verdict.better { color: var(--good); background: var(--good-bg); }
 .verdict.worse { color: var(--bad); background: var(--bad-bg); }
@@ -254,6 +271,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
   .board { grid-template-columns: minmax(0, 1fr); }
   .board-ref .tile { max-width: 260px; }
   .multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-row { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   section { padding-block: 40px; }
@@ -274,7 +292,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
 <header class="top">
   <div class="wrap">
     <div class="mark"><span class="glyph" aria-hidden="true"><i style="background:var(--large)"></i><i style="background:var(--large)"></i><i style="background:var(--small)"></i></span>Image Model Re-Router</div>
-    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#findings">Findings</a><a href="#explore">Compare images</a><a href="#results">Charts</a><a href="#method">Method</a></nav>
+    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#explore">Compare images</a><a href="#findings">Findings</a><a href="#results">Charts</a><a href="#method">Method</a></nav>
   </div>
 </header>
 
@@ -304,17 +322,10 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
     </div>
   </section>
 
-  <section id="findings">
-    <div class="wrap">
-      <div class="section-head"><h2>Our findings</h2></div>
-      <ul class="findings" id="findings-list"></ul>
-    </div>
-  </section>
-
-  <section class="band" id="how">
+  <section id="how">
     <div class="wrap">
       <div class="section-head" id="explore"><h2>Compare the images</h2>
-        <p class="lede">Pick a prompt, then click any picture to put it next to the big model's. Drag across the large image to swipe between them.</p>
+        <p class="lede">Pick a prompt, then click any picture to put it next to the big model's. Drag the line across the large image: everything left of the line is the left image, everything right of it is the right image. Switch to Difference to subtract one picture from the other and see exactly where they disagree.</p>
         <p class="measure">The left side starts on the big model. The right side starts on the most efficient handoff for that type of prompt: the cheapest handoff whose average preference score stays within 0.1 of the big model's.</p></div>
       <div class="controls">
         <div class="chips" id="group-chips" role="group" aria-label="Type of prompt"></div>
@@ -327,12 +338,25 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
       </div>
       <div class="prompt-box"><q id="prompt-text"></q><div class="expect" id="prompt-expect"></div></div>
       <div class="compare">
-        <div class="swipe" id="swipe">
-          <div class="layer a img" id="layer-a"></div>
-          <div class="layer b img" id="layer-b"></div>
-          <div class="divider"></div><div class="knob" aria-hidden="true">&#8249; &#8250;</div>
-          <span class="badge a" id="badge-a"></span><span class="badge b" id="badge-b"></span>
-          <input type="range" id="swipe-range" min="0" max="100" value="50" aria-label="Swipe between the left and right image">
+        <div class="view">
+          <div class="view-bar">
+            <span class="seg" id="view-seg" role="group" aria-label="View"><button type="button" data-v="swipe" aria-pressed="true">Swipe</button><button type="button" data-v="diff" aria-pressed="false">Difference</button></span>
+            <span id="view-hint"></span>
+          </div>
+          <div class="swipe" id="swipe" data-view="swipe">
+            <div class="layer a img" id="layer-a"></div>
+            <div class="layer b img" id="layer-b"></div>
+            <canvas class="diff" id="diff" aria-label="Where the two images differ"></canvas>
+            <div class="divider"></div><div class="knob" aria-hidden="true">&#8249; &#8250;</div>
+            <span class="tag" id="badge-a"></span><span class="tag" id="badge-b"></span>
+            <span class="tag score" id="score-a" hidden></span><span class="tag score" id="score-b" hidden></span>
+            <input type="range" id="swipe-range" min="0" max="100" value="50" aria-label="Swipe between the left and right image">
+          </div>
+          <div class="diff-tools" id="diff-tools" hidden>
+            <span class="seg" id="dstyle-seg" role="group" aria-label="Difference style"><button type="button" data-s="pic" aria-pressed="true">On the picture</button><button type="button" data-s="heat" aria-pressed="false">Heat map only</button></span>
+            <label>Boost <input type="range" id="boost" min="1" max="8" step="1" value="3" aria-label="Boost small differences"><span id="boost-val">3&#215;</span></label>
+            <span class="diff-stat" id="diff-stat"></span>
+          </div>
         </div>
         <div class="side">
           <div class="card" id="side-a"></div>
@@ -343,6 +367,13 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
         <div class="board-ref"><div class="row-head">Big model only</div><div id="ref-tile"></div></div>
         <div class="board-rows" id="board-rows"></div>
       </div>
+    </div>
+  </section>
+
+  <section class="band" id="findings">
+    <div class="wrap">
+      <div class="section-head"><h2>Our findings</h2></div>
+      <ul class="findings" id="findings-list"></ul>
     </div>
   </section>
 
@@ -357,13 +388,16 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
       <p class="measure" id="metric-blurb"></p>
       <div class="card chart-card">
         <div class="legend" id="legend"></div>
-        <div class="chart" id="main-chart"></div>
+        <div class="chart-row">
+          <div class="chart" id="main-chart"></div>
+          <aside class="tip-panel" id="main-tip" aria-live="polite"></aside>
+        </div>
         <div class="chart-foot"><button class="icon-btn" id="table-toggle" type="button" aria-pressed="false">Show the numbers</button></div>
         <div class="table-wrap" id="table-wrap" hidden></div>
       </div>
       <div id="multiples-wrap">
         <h3 style="margin-top:36px">By type of prompt</h3>
-        <p class="measure" style="margin-top:6px">Each type has only 10 prompts, so its ranges are wider.</p>
+        <p class="measure" style="margin-top:6px">Each type has 30 to 40 prompts, so its ranges are wider than the overall ones.</p>
         <div class="multiples" id="multiples"></div>
       </div>
     </div>
@@ -395,16 +429,19 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let D, S, SEC;                         // data, settings by id, seconds per step
-const HERO = "l2s@0.4";                // the setting the story leads with
+const HERO = "l2s@0.6";                // the setting the story leads with
+const MATCHED = "l2s@0.4";             // the handoff that costs the same as a fewer-steps control
 const HERO_PROMPT = "comp_04";
 const LINKEDIN = { aaron: "https://www.linkedin.com/in/aaronjhe", alice: "https://www.linkedin.com/in/alice-yi-219772359/" };
-const st = { group: "composition", prompt: HERO_PROMPT, seed: 42, a: "large@30", b: HERO, metric: "pick_score", cgroup: "all", table: false };
+const st = { group: "composition", prompt: HERO_PROMPT, seed: 42, a: "large@30", b: HERO, view: "swipe", x: 50, boost: 3, dstyle: "pic", metric: "pick_score", cgroup: "all", table: false };
 const METRIC = {
   pick_score: { k: 1, d: 2, axis: "Change in PickScore", what: "PickScore predicts which image people would prefer." },
   vqa_score: { k: 100, d: 1, axis: "Change in VQAScore", what: "VQAScore asks a vision model whether the image shows what the prompt describes, on a 0 to 100 scale." },
   clip_score: { k: 1, d: 2, axis: "Change in CLIPScore", what: "CLIPScore measures how closely the image matches the words of the prompt." },
-  ocr_match: { k: 100, d: 0, axis: "Change in text accuracy (points)", what: "Text accuracy checks whether the words in the text prompts come out right. Only the 10 text prompts count here." },
+  ocr_match: { k: 100, d: 0, axis: "Change in text accuracy (points)", what: "Text accuracy checks whether the words in the text prompts come out right. Only the text prompts count here." },
+  count_match: { k: 100, d: 0, axis: "Change in counting accuracy (points)", what: "Counting checks whether the image shows the number of objects the prompt asked for. Only the composition prompts count here." },
 };
+const ONLY_GROUP = { ocr_match: "text", count_match: "composition" };   // scores that apply to one type of prompt
 const ROWS = [
   { cls: "control", ids: ["large@24", "small@30", "large@18", "large@12"], title: "Big model with fewer steps, or small model alone" },
   { cls: "large", ids: ["l2s@0.8", "l2s@0.6", "l2s@0.4", "l2s@0.2"], title: "Big model starts, small model finishes" },
@@ -448,14 +485,14 @@ function rail(id, cls = "") {
 
 /* ---------- images: one strip of 13 tiles per (prompt, seed) ---------- */
 const spriteKey = (p, s) => `${p}_s${s}`;
-const loaded = new Set();
+const loaded = new Set(), sprites = new Map();   // key -> decoded strip, for the difference view
 function spriteCSS(key, id) {
   const n = D.settings.length, i = S[id].i;
   return `background-image:url("sprites/${key}.webp");background-size:${n * 100}% 100%;background-position:${(i / (n - 1) * 100).toFixed(4)}% 0`;
 }
 function loadSprite(key) {
   if (loaded.has(key)) return Promise.resolve();
-  return new Promise(res => { const im = new Image(); im.onload = im.onerror = () => { loaded.add(key); res(); }; im.src = `sprites/${key}.webp`; });
+  return new Promise(res => { const im = new Image(); const done = () => { loaded.add(key); res(); }; im.onload = () => { sprites.set(key, im); done(); }; im.onerror = done; im.src = `sprites/${key}.webp`; });
 }
 function paint(el, key, id) {
   el.classList.add("loading");
@@ -466,8 +503,9 @@ const paintAll = root => root.querySelectorAll(".img[data-key]").forEach(el => p
 
 /* ---------- top of page: pictures, findings, how it works ---------- */
 function renderStory() {
-  const m = D.meta, all = D.summary.pick_score.all.settings, h = all[HERO];
-  const match = D.matched.pick_score.find(r => r.handoff === HERO), fewer = all[match.control];
+  const m = D.meta, all = D.summary.pick_score.all.settings, h = all[HERO], hv = D.summary.vqa_score.all.settings[HERO];
+  const match = D.matched.pick_score.find(r => r.handoff === MATCHED), matchV = D.matched.vqa_score.find(r => r.handoff === MATCHED);
+  const h2h = D.head_to_head.pick_score.filter(r => verdictOf(r) === "better");
   const handoffSteps = S[HERO].segments[1][2] - S[HERO].segments[1][1];
   const key = spriteKey(HERO_PROMPT, 42), prompt = D.prompts.find(x => x.id === HERO_PROMPT);
 
@@ -476,15 +514,16 @@ function renderStory() {
     <div class="card">${imgDiv(key, id)}<div class="cap"><b>${esc(name(id))}</b>${rail(id)}<span>${id === HERO ? `${secs(id)}, ${pct0(S[id].saved)} less time` : secs(id)}</span></div></div>`).join("");
   paintAll($("#hero-duo"));
 
+  const same = r => verdictOf(r) === "same";
   const findings = [
-    [`A handoff can produce an image that is ${pct0(S[HERO].saved)} cheaper, with no clear loss in quality.`,
-     `Letting the small model do the last ${handoffSteps} of ${m.steps} steps cut the GPU time per image by ${pct(S[HERO].saved)}. The cost of generation is GPU time, so cutting time cuts cost. PickScore (a score that predicts which image people would prefer) dropped by ${Math.abs(h.mean).toFixed(2)} with the handoff, which is within the noise.`],
-    ["The handoff beats fewer steps of the big diffusion model.",
-     `The simplest way to save GPU time is to run the big model alone for fewer steps. Running the big model alone for ${S[match.control].segments[0][2]} steps instead of ${m.steps} steps saves about the same GPU time, but scores ${fmtD(fewer.mean, "pick_score").replace("−", "")} lower on PickScore. The handoff scored higher on ${match.better} of ${match.n} prompts.`],
-    ["The model that starts the handoff sets the layout and the ending model refines detail.",
-     "The early diffusion steps determine what goes where. If the small model starts the diffusion process, you get the composition it produces and the big model polishes it."],
+    [`A handoff can produce an image that is ${pct0(S[HERO].saved)} cheaper with no clear loss on the preference score.`,
+     `Letting the small model do the last ${handoffSteps} of ${m.steps} steps cut the GPU time per image by ${pct(S[HERO].saved)}. The cost of generation is GPU time, so cutting time cuts cost. PickScore (a score that predicts which image people would prefer) changed by ${fmtD(h.mean, "pick_score")} on average, ${same(h) ? "which is within the noise" : "which is a clear drop"}. VQAScore, which checks the image against the prompt, ${hv.mean < 0 ? "dropped" : "rose"} by ${Math.abs(hv.mean * 100).toFixed(1)} points${same(hv) ? ", which is within the noise" : ""}. Saving more by handing off earlier costs more quality.`],
+    ["Against the big model with fewer steps, the handoff is a tie.",
+     `The simplest way to save GPU time is to run the big model alone for fewer steps. Running it for ${S[match.control].segments[0][2]} steps saves about the same time as a ${S[MATCHED].segments[0][2]}-step handoff. On PickScore the handoff scored ${fmtD(match.mean, "pick_score")} on average against the shortcut and won on ${match.better} of ${match.n} prompts, so the two are ${same(match) ? "about even" : match.mean > 0 ? "clearly in the handoff's favour" : "clearly in the shortcut's favour"}. On VQAScore the handoff scored ${fmtD(matchV.mean, "vqa_score")} points${same(matchV) ? ", also within the noise" : ", a clear " + (matchV.mean < 0 ? "drop" : "gain")}. In our 60-prompt pilot the handoff looked clearly better. With 200 prompts, that gap closed.`],
+    ["For the same price, letting the big model start gives pictures people prefer.",
+     `Each big-to-small handoff has a small-to-big twin that runs the same number of steps on each model, so it costs the same. ${h2h.length ? `The big-first order won ${h2h.length} of the 4 pairs clearly on PickScore, by up to ${Math.max(...h2h.map(r => r.mean)).toFixed(2)}.` : "On PickScore the two orders came out even."} On VQAScore the orders are even. The early steps decide what goes where. When the small model starts, you get its layout, and people like those layouts a little less, even after the big model polishes the detail.`],
     ["The best handoff depends on the type of prompt.",
-     "When the small model started, composition and text prompts came out noticeably worse on the preference score. Dense prompts, with long descriptions of busy scenes, came out noticeably better. That's why our next step is a router that classifies prompts and picks the best handoff."],
+     "Text prompts punish a small start: every small-first handoff came out clearly worse on the preference score, and the words were less often readable. Stylized prompts don't care which model runs: even the small model alone matched the big one. Dense prompts, with long descriptions of busy scenes, leaned the other way, with a small start scoring a little higher on average, though not clearly. That's why our next step is a router that classifies prompts and picks the best handoff."],
   ];
   $("#findings-list").innerHTML = findings.map(([t, d]) => `<li><b>${esc(t)}</b><p>${esc(d)}</p></li>`).join("");
 
@@ -512,19 +551,19 @@ function renderStory() {
 
   const items = [
     ["What we made", `We wrote ${m.n_prompts} prompts, split across the 6 types of prompt. We ran each prompt with ${m.seeds.length} different seeds (${m.seeds.join(" and ")}), and with all 13 settings. The seed sets the random noise the image starts from, so the same prompt and seed always start from the same noise. That gave ${m.n_images.toLocaleString()} images, each 1024×1024. For a given prompt and seed, the only thing that changed was which model ran each step.`],
-    ["Hardware", `We made all the images in one session on an ${esc(m.gpu)} GPU on ${m.run_start.slice(0, 10)}.`],
-    ["Time", `We worked out each image's time from its steps. A big-model step takes ${SEC.large.toFixed(3)} seconds, a small-model step takes ${SEC.small.toFixed(3)} seconds, and reading the prompt and saving the image takes ${SEC.fixed.toFixed(2)} seconds. When we checked these numbers against the measured times, they matched within 0.2%.`],
-    ["Quality", `<p>We scored every image automatically in four ways.</p>
+    ["Hardware", `We made all the images on an ${esc(m.gpu)} GPU, in several sessions between ${m.run_start.slice(0, 10)} and ${m.run_end.slice(0, 10)}.`],
+    ["Time", `We worked out each image's time from its steps. A big-model step takes ${SEC.large.toFixed(3)} seconds, a small-model step takes ${SEC.small.toFixed(3)} seconds, and reading the prompt and saving the image takes ${SEC.fixed.toFixed(2)} seconds. When we checked these numbers against the measured times, they matched within 0.4%.`],
+    ["Quality", `<p>We scored every image automatically in five ways.</p>
       <ul class="metrics">
         <li><b>PickScore</b> is a model trained to predict which of two images people would prefer.</li>
         <li><b>VQAScore</b> asks a vision model whether the image shows what the prompt describes.</li>
         <li><b>CLIPScore</b> measures how closely the image matches the words in the prompt.</li>
         <li><b>Text accuracy</b> reads the words in the image with OCR and checks that they match the prompt. It only applies to the text prompts.</li>
+        <li><b>Counting</b> uses an object detector to count the objects the prompt asked for and checks the number. It only applies to the composition prompts.</li>
       </ul>`],
-    ["How sure we are", "For each image, we took its score and subtracted the big model's score for the same prompt and seed. That shows how much the setting helped or hurt that one picture. We then averaged these differences across prompts. With only a few dozen prompts, that average is an estimate, so the bars on the charts show the range where the true average most likely falls (a 95% confidence interval). For example, a range of −0.11 to +0.06 means the setting could be a little worse or a little better than the big model alone. We can't tell which, so we call it “no clear change.” If the whole range is below zero, the setting is clearly worse. If the whole range is above zero, it is clearly better."],
-    ["Limits", "This is a pilot study with only 10 prompts of each type, so the results for any single type are rough. The scores are automatic, so they can miss problems that a person would notice. We have not yet scored whether the images show the right number of objects."],
+    ["How sure we are", "For each image, we took its score and subtracted the big model's score for the same prompt and seed. That shows how much the setting helped or hurt that one picture. We then averaged these differences across prompts. With a few dozen prompts of each type, that average is an estimate, so the bars on the charts show the range where the true average most likely falls (a 95% confidence interval). For example, a range of −0.11 to +0.06 means the setting could be a little worse or a little better than the big model alone. We can't tell which, so we call it “no clear change.” If the whole range is below zero, the setting is clearly worse. If the whole range is above zero, it is clearly better."],
+    ["Limits", "Each type has 30 to 40 prompts, so the results for a single type are still rougher than the overall ones. The scores are automatic, so they can miss problems that a person would notice. Counting relies on an object detector that makes mistakes of its own, so it is the noisiest of the five scores."],
     ["Next steps", `<ol class="metrics">
-        <li><b>Run more prompts.</b> The pilot used 60 prompts, only 10 of each type. Next we will run the full set of 200 prompts, with 30 to 40 of each type. That will make the results for each type much more reliable.</li>
         <li><b>Run GenEval.</b> GenEval is a standard benchmark of 553 prompts that checks whether an image has the right objects, counts, colours and positions. Running it tests the handoffs on a much larger set of prompts that is widely used in research.</li>
         <li><b>Build a router that picks the handoff.</b> We will build a decision router using Jev, a System One model from TypeSafe. When someone types a prompt, it will decide which of the 6 types the prompt belongs to. It will then pick the handoff that worked best for that type, so each prompt gets the cheapest setting that keeps the quality.</li>
       </ol>`],
@@ -532,6 +571,7 @@ function renderStory() {
   ];
   $("#method-grid").innerHTML = items.map(([t, p]) => `<div><h3>${t}</h3>${p.startsWith("<") ? p : `<p>${p}</p>`}</div>`).join("");
   $("#method-grid").firstElementChild.append($("#prompt-types"));
+  const counts = D.groups.map(g => D.prompts.filter(p => p.group === g.id).length), perType = [...new Set([Math.min(...counts), Math.max(...counts)])];
   const fam = f => D.settings.filter(s => s.family === f);
   const switches = f => fam(f).map(s => s.segments[0][2]).join(", ");
   const branches = [
@@ -542,7 +582,7 @@ function renderStory() {
     ["small", "Small to big handoffs", `The small model starts and hands off after step ${switches("small_first")}.`, fam("small_first").length],
   ];
   $("#prompt-tree").innerHTML = `
-    <div class="pt-node"><b>${m.n_prompts} prompts</b><span>${D.groups.length} types × ${m.n_prompts / D.groups.length} prompts, each run with ${m.seeds.length} seeds</span></div>
+    <div class="pt-node"><b>${m.n_prompts} prompts</b><span>${D.groups.length} types, ${perType.join(" to ")} prompts each, each run with ${m.seeds.length} seeds</span></div>
     <ul>${branches.map(([c, t, d, n]) => `<li class="pt-node"><b><span class="sw ${c}"></span> ${t}: ${n} setting${n > 1 ? "s" : ""}</b><span>${d}</span></li>`).join("")}</ul>
     <p class="pt-step">${D.settings.length} settings for each prompt</p>
     <div class="pt-node total"><b>${m.n_images.toLocaleString()} images</b><span>${m.n_prompts} prompts × ${m.seeds.length} seeds × ${D.settings.length} settings</span></div>`;  $("#footer-text").innerHTML = `By <a href="${LINKEDIN.aaron}">Aaron He</a> and <a href="${LINKEDIN.alice}">Alice Yi</a>.`;
@@ -572,6 +612,8 @@ function expectText(e) {
   return "";
 }
 const scoreOf = id => D.images[spriteKey(st.prompt, st.seed)][S[id].i];
+const famCls = id => ({ full: "ink", fewer: "control", small: "control", large_first: "large", small_first: "small" })[S[id].family];
+const swatch = id => `<span class="sw ${famCls(id)}"></span>`;
 function sideCard(side, id) {
   const sc = scoreOf(id), ref = scoreOf("large@30"), isRef = id === "large@30";
   const d = (v, r, m) => { if (isRef) return ""; const x = v - r, cls = x > 0 ? "delta-up" : x < 0 ? "delta-down" : ""; return ` <span class="${cls}">(${fmtD(x, m)})</span>`; };
@@ -581,13 +623,16 @@ function sideCard(side, id) {
     ["Handoff: small model starts, big model finishes", ROWS[2].ids],
     ["No handoff: one model the whole way", ["large@30", ...ROWS[0].ids]],
   ].map(([label, ids]) => `<optgroup label="${label}">${ids.map(opt).join("")}</optgroup>`).join("");
-  const text = sc[3] === null ? "" : `<dt>Text it wrote</dt><dd>${sc[4] ? `“${esc(sc[4])}”` : "none found"} ${sc[3] ? "✓" : "✗"}</dd>`;
-  return `<div class="head"><span>${side}</span><select data-side="${side === "Left" ? "a" : "b"}" aria-label="${side} image">${opts}</select></div>
+  const acc = textAcc(sc), refAcc = textAcc(ref);
+  const text = sc[3] === null ? "" : `<dt>Text accuracy</dt><dd>${acc}%${isRef || refAcc == null ? "" : ` <span class="${acc > refAcc ? "delta-up" : acc < refAcc ? "delta-down" : ""}">(${acc - refAcc > 0 ? "+" : acc - refAcc < 0 ? "−" : ""}${Math.abs(acc - refAcc)})</span>`}</dd>
+    <dt>Text it wrote</dt><dd>${sc[4] ? `“${esc(sc[4])}”` : "none found"} ${sc[3] ? "✓" : "✗"}</dd>`;
+  const count = sc[5] == null ? "" : `<dt>Objects counted</dt><dd>${sc[6] == null ? "?" : sc[6]} ${sc[5] ? "✓" : "✗"}</dd>`;
+  return `<div class="head"><span>${swatch(id)}${side}</span><select data-side="${side === "Left" ? "a" : "b"}" aria-label="${side} image">${opts}</select></div>
     ${rail(id, "tall")}
     <dl class="facts">
       <dt>Time</dt><dd>${timeText(id)}</dd>
       <dt>PickScore</dt><dd>${sc[0].toFixed(2)}${d(sc[0], ref[0], "pick_score")}</dd>
-      <dt>VQAScore</dt><dd>${(sc[1] * 100).toFixed(1)}${d(sc[1], ref[1], "vqa_score")}</dd>${text}
+      <dt>VQAScore</dt><dd>${(sc[1] * 100).toFixed(1)}${d(sc[1], ref[1], "vqa_score")}</dd>${text}${count}
     </dl>`;
 }
 function tileHTML(id) {
@@ -599,9 +644,14 @@ function renderExplorer() {
   $("#prompt-text").textContent = p.text;
   const ex = expectText(p.expected); $("#prompt-expect").innerHTML = ex; $("#prompt-expect").hidden = !ex;
   paint($("#layer-a"), key, st.a); paint($("#layer-b"), key, st.b);
-  $("#badge-a").textContent = shortName(st.a); $("#badge-b").textContent = shortName(st.b);
-  $("#side-a").innerHTML = sideCard("Left", st.a);
-  $("#side-b").innerHTML = sideCard("Right", st.b);
+  $("#badge-a").innerHTML = `${swatch(st.a)}&#9664; ${esc(shortName(st.a))}`; $("#badge-b").innerHTML = `${swatch(st.b)}${esc(shortName(st.b))} &#9654;`;
+  $("#score-a").innerHTML = scoreTag(st.a); $("#score-b").innerHTML = scoreTag(st.b);
+  placeTags();
+  $("#side-a").innerHTML = sideCard("Left", st.a); $("#side-a").style.setProperty("--side-c", `var(--${famCls(st.a)})`);
+  $("#side-b").innerHTML = sideCard("Right", st.b); $("#side-b").style.setProperty("--side-c", `var(--${famCls(st.b)})`);
+  $("#swipe").dataset.view = st.view; $("#diff-tools").hidden = st.view !== "diff";
+  $("#view-hint").textContent = st.view === "diff" ? "The left image minus the right one. Dark means they agree there; bright means they differ." : "Drag the line. Left of it is the left image, right of it is the right image.";
+  if (st.view === "diff") renderDiff();
   $("#ref-tile").innerHTML = tileHTML("large@30");
   $("#board-rows").innerHTML = ROWS.map(r => `<div class="board-row"><div class="row-head"><span class="sw ${r.cls}"></span>${esc(r.title)}</div><div class="tiles">${r.ids.map(tileHTML).join("")}</div></div>`).join("");
   paintAll($("#how .board"));
@@ -609,6 +659,54 @@ function renderExplorer() {
   document.querySelectorAll("#group-chips button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === st.group));
   const list = promptsIn(st.group), i = list.findIndex(x => x.id === st.prompt);
   [list[i + 1], list[i - 1]].filter(Boolean).forEach(q => loadSprite(spriteKey(q.id, st.seed)));
+}
+// text accuracy from OCR: 100% = the expected words spelled exactly right (1 - character error rate)
+const textAcc = sc => sc[7] == null ? null : Math.max(0, Math.round((1 - sc[7]) * 100));
+// on-image result for text prompts: text accuracy and what OCR read
+function scoreTag(id) {
+  const sc = scoreOf(id), acc = textAcc(sc);
+  if (acc == null) return "";
+  const t = (sc[4] || "").replaceAll(" | ", " ").trim();
+  return `Text accuracy <span class="${acc === 100 ? "ok" : "no"}">${acc}%</span> · ${t ? `“${esc(t.length > 24 ? t.slice(0, 23) + "…" : t)}”` : "no text found"}`;
+}
+// the labels sit on either side of the line and hide when their side is too narrow to show
+function placeTags() {
+  const W = $("#swipe").clientWidth, x = st.x / 100 * W;
+  for (const [a, b] of [[$("#badge-a"), $("#badge-b")], [$("#score-a"), $("#score-b")]]) {
+    a.hidden = !a.innerHTML; b.hidden = !b.innerHTML;
+    const ax = x - 12 - a.offsetWidth, bx = x + 12;
+    if (!a.hidden) { a.hidden = ax < 8; a.style.left = `${ax}px`; }
+    if (!b.hidden) { b.hidden = bx + b.offsetWidth > W - 8; b.style.left = `${bx}px`; }
+  }
+}
+// difference view: per-pixel |left - right|, averaged over the colour channels, through a heat scale
+const HEAT = (() => { const stops = [[0, 0, 4], [59, 15, 112], [183, 55, 121], [251, 136, 37], [252, 253, 191]], lut = []; for (let i = 0; i < 256; i++) { const t = i / 255 * (stops.length - 1), j = Math.min(stops.length - 2, Math.floor(t)), f = t - j; lut.push(stops[j].map((v, c) => v + (stops[j + 1][c] - v) * f)); } return lut; })();
+function tileData(key, id) {
+  const im = sprites.get(key); if (!im) return null;
+  const T = D.meta.tile, c = document.createElement("canvas"); c.width = c.height = T;
+  const g = c.getContext("2d"); g.drawImage(im, S[id].i * T, 0, T, T, 0, 0, T, T);
+  return g.getImageData(0, 0, T, T);
+}
+function renderDiff() {
+  const key = spriteKey(st.prompt, st.seed);
+  loadSprite(key).then(() => {
+    if (st.view !== "diff") return;
+    const A = tileData(key, st.a), B = tileData(key, st.b); if (!A || !B) return;
+    const T = A.width, out = new ImageData(T, T), a = A.data, b = B.data, o = out.data, gain = st.boost, onPic = st.dstyle === "pic";
+    let sum = 0, clear = 0;
+    for (let i = 0; i < a.length; i += 4) {
+      const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+      sum += d; if (d > 12) clear++;
+      const v = Math.min(255, Math.round(d * gain)), h = HEAT[v];
+      if (onPic) { const l = (0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2]) * 0.4, t = v / 255; o[i] = l + (h[0] - l) * t; o[i + 1] = l + (h[1] - l) * t; o[i + 2] = l + (h[2] - l) * t; }
+      else { o[i] = h[0]; o[i + 1] = h[1]; o[i + 2] = h[2]; }
+      o[i + 3] = 255;
+    }
+    const cv = $("#diff"); cv.width = cv.height = T; cv.getContext("2d").putImageData(out, 0, 0);
+    const n = a.length / 4;
+    $("#diff-stat").textContent = st.a === st.b ? "Both sides show the same image, so there is nothing to subtract."
+      : `${pct0(clear / n)} of pixels differ clearly (by more than 5%). Average difference: ${(sum / n / 255 * 100).toFixed(1)}% of full brightness.`;
+  });
 }
 function bindExplorer() {
   $("#group-chips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.group = b.dataset.g; st.prompt = promptsIn(st.group)[0].id; st.a = "large@30"; st.b = bestFor(st.group); renderControls(); renderExplorer(); });
@@ -619,7 +717,11 @@ function bindExplorer() {
   $("#next-prompt").addEventListener("click", () => step(1));
   $("#how").addEventListener("click", e => { const t = e.target.closest(".tile"); if (!t) return; st.b = t.dataset.id; renderExplorer(); });
   $("#how").addEventListener("change", e => { const s = e.target.closest("select[data-side]"); if (!s) return; st[s.dataset.side] = s.value; renderExplorer(); });
-  $("#swipe-range").addEventListener("input", e => $("#swipe").style.setProperty("--x", `${e.target.value}%`));
+  $("#swipe-range").addEventListener("input", e => { st.x = +e.target.value; $("#swipe").style.setProperty("--x", `${st.x}%`); placeTags(); });
+  new ResizeObserver(placeTags).observe($("#swipe"));
+  $("#view-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.view = b.dataset.v; document.querySelectorAll("#view-seg button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderExplorer(); });
+  $("#dstyle-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; st.dstyle = b.dataset.s; document.querySelectorAll("#dstyle-seg button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderDiff(); });
+  $("#boost").addEventListener("input", e => { st.boost = +e.target.value; $("#boost-val").textContent = `${st.boost}\u00d7`; renderDiff(); });
 }
 
 /* ---------- charts ---------- */
@@ -720,24 +822,34 @@ function tipHTML(id, metric, group) {
     <p>Compared with the big model alone, its ${label} changed by ${fmtD(r.mean, metric)} on average. The true change is most likely between ${fmtRange(r, metric)}.</p>
     <p>It scored higher on ${r.better} of the ${r.n} prompts and lower on ${r.worse}.</p>${pref}${verdictHTML(r)}<p>${why}</p>`;
 }
-function drawChart(el, metric, group, compact, uid) {
+const PANEL_HINT = `<p class="hint">Hover over a dot to see its details here. Click a dot to keep them.</p>`;
+function drawChart(el, metric, group, compact, uid, panel) {
   const W = Math.max(280, Math.floor(el.clientWidth));
   const { svg, pts } = chartSVG(W, metric, group, compact, uid);
-  el.innerHTML = svg + `<div class="tip" hidden></div>`;
-  const tip = $(".tip", el);
+  el.innerHTML = svg + (panel ? "" : `<div class="tip" hidden></div>`);
+  const tip = panel || $(".tip", el);
   const show = t => {
     const q = pts.find(p => p.id === t.dataset.id); if (!q) return;
-    tip.innerHTML = tipHTML(q.id, metric, group); tip.hidden = false;
+    tip.innerHTML = tipHTML(q.id, metric, group);
+    if (panel) return;
+    tip.hidden = false;
     const tw = tip.offsetWidth, th = tip.offsetHeight;
     let x = q.cx + 16, y = q.cy - th / 2;
     if (x + tw > W) x = q.cx - 16 - tw;
     x = Math.max(4, Math.min(W - tw - 4, x)); y = Math.max(0, Math.min(el.clientHeight - th, y));
     tip.style.left = `${x}px`; tip.style.top = `${y}px`;
   };
+  // the side panel falls back to the pinned dot, or a hint; the floating tip just hides
+  const rest = () => { if (panel) tip.innerHTML = st.pin && pts.some(p => p.id === st.pin) ? tipHTML(st.pin, metric, group) : PANEL_HINT; else tip.hidden = true; };
   el.onpointerover = e => { const t = e.target.closest(".hit"); if (t) show(t); };
-  el.onpointerleave = () => { tip.hidden = true; };
+  el.onpointerleave = rest;
   el.onfocusin = e => { const t = e.target.closest(".hit"); if (t) show(t); };
-  el.onfocusout = () => { tip.hidden = true; };
+  el.onfocusout = rest;
+  if (panel) {
+    const mark = () => el.querySelectorAll(".hit").forEach(h => h.classList.toggle("pinned", h.dataset.id === st.pin));
+    el.onclick = e => { const t = e.target.closest(".hit"); if (!t) return; st.pin = st.pin === t.dataset.id ? null : t.dataset.id; mark(); show(t); };
+    mark(); rest();
+  }
 }
 function renderLegend() {
   const ln = c => `<svg width="26" height="12" aria-hidden="true"><line x1="1" x2="25" y1="6" y2="6" style="stroke:${c};stroke-width:2"/><circle cx="13" cy="6" r="4" style="fill:${c};stroke:var(--surface);stroke-width:2"/></svg>`;
@@ -756,14 +868,15 @@ function renderTable() {
   }).join("")}</tbody></table>`;
 }
 function renderCharts() {
-  if (st.metric === "ocr_match") st.cgroup = "text";
+  const only = ONLY_GROUP[st.metric];
+  if (only) st.cgroup = only;
   else if (!D.summary[st.metric][st.cgroup]) st.cgroup = "all";
   $("#metric-seg").innerHTML = D.metrics.map(m => `<button type="button" data-m="${m.id}" aria-pressed="${m.id === st.metric}">${esc(m.label)}</button>`).join("");
-  $("#cgroup-chips").innerHTML = [{ id: "all", label: "All prompts" }, ...D.groups].map(g => `<button class="chip-btn" type="button" data-g="${g.id}" aria-pressed="${g.id === st.cgroup}"${st.metric === "ocr_match" && g.id !== "text" ? " disabled" : ""}>${esc(g.label)}</button>`).join("");
+  $("#cgroup-chips").innerHTML = [{ id: "all", label: "All prompts" }, ...D.groups].map(g => `<button class="chip-btn" type="button" data-g="${g.id}" aria-pressed="${g.id === st.cgroup}"${only && g.id !== only ? " disabled" : ""}>${esc(g.label)}</button>`).join("");
   $("#metric-blurb").textContent = METRIC[st.metric].what;
-  drawChart($("#main-chart"), st.metric, st.cgroup, false, "main");
+  drawChart($("#main-chart"), st.metric, st.cgroup, false, "main", $("#main-tip"));
   renderTable();
-  const mw = $("#multiples-wrap"); mw.hidden = st.metric === "ocr_match";
+  const mw = $("#multiples-wrap"); mw.hidden = !!only;
   if (!mw.hidden) {
     $("#multiples").innerHTML = D.groups.map(g => `<div class="card multiple" data-active="${g.id === st.cgroup}"><button type="button" class="mhead" data-g="${g.id}">${esc(g.label)}</button><div class="chart" data-g="${g.id}"></div></div>`).join("");
     document.querySelectorAll("#multiples .chart").forEach(el => drawChart(el, st.metric, el.dataset.g, true, `m-${el.dataset.g}`));
