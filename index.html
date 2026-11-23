@@ -447,7 +447,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
 
   <section id="notes">
     <div class="wrap">
-      <div class="section-head"><h2>How sure we are, limits and next steps</h2></div>
+      <div class="section-head"><h2>Error bars, limits and next steps</h2></div>
       <div class="method-grid" id="notes-grid"></div>
     </div>
   </section>
@@ -593,7 +593,7 @@ function renderStory() {
         <li><b>Text accuracy</b> reads the words in the image with OCR and checks that they match the prompt. It only applies to the text prompts.</li>
         <li><b>Counting</b> uses an object detector to count the objects the prompt asked for and checks the number. It only applies to the composition prompts.</li>
       </ul>`],
-    ["How sure we are", "For each image, we took its score and subtracted the big model's score for the same prompt and seed. That shows how much the setting helped or hurt that one picture. We then averaged these differences across prompts. With a few dozen prompts of each type, that average is an estimate, so the bars on the charts show the range where the true average most likely falls (a 95% confidence interval). For example, a range of −0.11 to +0.06 means the setting could be a little worse or a little better than the big model alone. We can't tell which, so we call it “no clear change.” If the whole range is below zero, the setting is clearly worse. If the whole range is above zero, it is clearly better."],
+    ["Error bars (95% confidence range)", "For each image, we took its score and subtracted the big model's score for the same prompt and seed. That shows how much the setting helped or hurt that one picture. We then averaged these differences across prompts. With a few dozen prompts of each type, that average is an estimate, so the bars on the charts show the range where the true average most likely falls (a 95% confidence interval). For example, a range of −0.11 to +0.06 means the setting could be a little worse or a little better than the big model alone. We can't tell which, so we call it “no clear change.” If the whole range is below zero, the setting is clearly worse. If the whole range is above zero, it is clearly better."],
     ["Limits", "Each type has 30 to 40 prompts, so the results for a single type are still rougher than the overall ones. The scores are automatic, so they can miss problems that a person would notice. Counting relies on an object detector that makes mistakes of its own, so it is the noisiest of the five scores."],
     ["Next steps", `<ol class="metrics">
         <li><b>Run GenEval.</b> GenEval is a standard benchmark of 553 prompts that checks whether an image has the right objects, counts, colours and positions. Running it tests the handoffs on a much larger set of prompts that is widely used in research.</li>
