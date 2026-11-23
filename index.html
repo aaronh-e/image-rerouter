@@ -941,7 +941,10 @@ function bindCharts() {
     Object.assign(ghost.style, { position: "fixed", left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`,
       margin: "0", zIndex: "30", pointerEvents: "none", transformOrigin: "0 0", boxShadow: "0 18px 50px rgba(16,21,30,.18)" });
     document.body.append(ghost);
-    ghost.animate([{ transform: "none" }, { transform: `translate(${r.left - from.left}px, ${top - from.top}px) scale(${r.width / from.width}, ${r.height / from.height})` }],
+    // grow evenly (same shape, no stretching), centred on where the big chart sits
+    const s = Math.min(r.width / from.width, r.height / from.height);
+    const dx = r.left + (r.width - from.width * s) / 2 - from.left, dy = top + (r.height - from.height * s) / 2 - from.top;
+    ghost.animate([{ transform: "none" }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
       { duration: DUR, easing: "cubic-bezier(.65,0,.35,1)", fill: "forwards" });
     ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR * 0.35, delay: DUR * 0.7, fill: "forwards" }).finished.then(() => ghost.remove());
     big.animate([{ opacity: 0, transform: "scale(.985)" }, { opacity: 1, transform: "none" }], { duration: DUR * 0.45, delay: DUR * 0.65, easing: "ease-out", fill: "backwards" });
