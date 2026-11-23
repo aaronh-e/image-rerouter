@@ -870,6 +870,8 @@ function drawChart(el, metric, group, compact, uid, panel) {
   const W = Math.max(280, Math.floor(el.clientWidth));
   const { svg, pts } = chartSVG(W, metric, group, compact, uid);
   el.innerHTML = svg + (panel ? "" : `<div class="tip" hidden></div>`);
+  // the small prompt-type charts don't react to their dots: the whole card is one click target for the big chart
+  if (compact) { el.querySelectorAll(".hit").forEach(h => h.remove()); return; }
   const tip = panel || $(".tip", el);
   const show = t => {
     const q = pts.find(p => p.id === t.dataset.id); if (!q) return;
