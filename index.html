@@ -86,7 +86,7 @@ section { padding-block: 56px; }
 
 /* findings */
 .findings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
-.findings li { border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 8px; align-content: start; background: var(--surface); }
+.findings li { border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 8px; align-content: start; background: var(--bg); }
 .findings b { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.2; }
 .findings p { color: var(--ink-2); }
 .findings li:last-child:nth-child(odd) { grid-column: 1 / -1; }
@@ -310,7 +310,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
 <header class="top">
   <div class="wrap">
     <div class="mark"><span class="glyph" aria-hidden="true"><i style="background:var(--large)"></i><i style="background:var(--large)"></i><i style="background:var(--small)"></i></span>Image Model Re-Router</div>
-    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#method">Method</a><a href="#explore">Compare images</a><a href="#findings">Findings</a><a href="#results">Charts</a><a href="#notes">Next steps</a></nav>
+    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#method">Method</a><a href="#explore">Compare images</a><a href="#results">Charts</a><a href="#findings">Findings</a><a href="#notes">Next steps</a></nav>
   </div>
 </header>
 
@@ -412,14 +412,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
     </div>
   </section>
 
-  <section id="findings">
-    <div class="wrap">
-      <div class="section-head"><h2>Our findings</h2></div>
-      <ul class="findings" id="findings-list"></ul>
-    </div>
-  </section>
-
-  <section class="band" id="results">
+  <section id="results">
     <div class="wrap">
       <div class="section-head"><h2>How much quality each saving costs</h2>
         <p class="lede">Each dot is one setting, compared with the big model on the same prompts. Up means better pictures. Right means cheaper. The bars show the likely range.</p></div>
@@ -442,6 +435,13 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
         <p class="measure" style="margin-top:6px">Each type has 30 to 40 prompts, so its ranges are wider than the overall ones.</p>
         <div class="multiples" id="multiples"></div>
       </div>
+    </div>
+  </section>
+
+  <section class="band" id="findings">
+    <div class="wrap">
+      <div class="section-head"><h2>Our findings</h2></div>
+      <ul class="findings" id="findings-list"></ul>
     </div>
   </section>
 
