@@ -535,18 +535,21 @@ function renderStory() {
   paintAll($("#hero-duo"));
 
   const same = r => verdictOf(r) === "same";
-  const dense = D.summary.pick_score.dense.settings, text = D.summary.ocr_match.text.settings;
+  const dense = D.summary.pick_score.dense.settings;
   const match = D.matched.pick_score.find(r => r.handoff === "l2s@0.4");   // the handoff that costs about the same as the big model with fewer steps
-  const textSmallFirst = Math.min(...ROWS[2].ids.map(id => text[id].mean));
+  // share of text-prompt images whose words came out spelled exactly right, per setting
+  const textKeys = Object.keys(D.images).filter(k => D.prompts.find(p => p.id === k.replace(/_s\d+$/, "")).group === "text");
+  const spelled = id => Math.round(100 * textKeys.filter(k => D.images[k][S[id].i][3] === 1).length / textKeys.length);
+  const worstSmallToBig = Math.min(...ROWS[2].ids.map(spelled));
   const findings = [
     ["A big-to-small handoff beats a small-to-big one.",
-     `Each big-first handoff has a small-first twin that runs the same steps on each model, so the two cost the same. ${h2h.length ? `Starting with the big model won ${h2h.length} of the 4 pairs clearly on PickScore, by up to ${Math.max(...h2h.map(r => r.mean)).toFixed(2)}, and the other pairs were ties.` : "On PickScore the two orders came out even."} Our best handoff, the big model for ${S[HERO].segments[0][2]} steps and then the small model for ${handoffSteps}, cut GPU time by ${pct(S[HERO].saved)} while PickScore changed by only ${fmtD(h.mean, "pick_score")}${same(h) ? ", which is within the noise" : ""}. PickScore predicts which picture people would prefer. For reference, a PickScore gap of 0.01 means about 50.25% of people pick the higher-scoring picture, essentially a coin flip.`],
-    ["Against the big model with fewer steps, the handoff is a tie.",
-     `The simplest way to save GPU time is to run the big model alone for fewer steps. Running it for ${S[match.control].segments[0][2]} steps costs about the same as the big model for ${S[match.handoff].segments[0][2]} steps and then the small model for the rest. On PickScore the handoff scored ${fmtD(match.mean, "pick_score")} against that shortcut and won on ${match.better} of ${match.n} prompts, so the two are ${same(match) ? "about even" : match.mean > 0 ? "clearly in the handoff's favour" : "clearly in the shortcut's favour"}. In our 60-prompt pilot the handoff looked clearly better. With 200 prompts, that gap closed.`],
+     `Each big-to-small handoff has a small-to-big twin that runs the same steps on each model, so the two cost the same. ${h2h.length ? `The big-to-small handoff won ${h2h.length} of the 4 pairs clearly on PickScore, by up to ${Math.max(...h2h.map(r => r.mean)).toFixed(2)}, and the other pairs were ties.` : "On PickScore the two directions came out even."} Our best handoff, the big model for ${S[HERO].segments[0][2]} steps and then the small model for ${handoffSteps}, cut GPU time by ${pct(S[HERO].saved)} while PickScore changed by only ${fmtD(h.mean, "pick_score")}${same(h) ? ", which is within the noise" : ""}. PickScore predicts which picture people would prefer. For reference, a PickScore gap of 0.01 means about 50.25% of people pick the higher-scoring picture, essentially a coin flip.`],
     ["The early steps set the layout. The late steps refine the detail.",
-     `The first steps turn noise into a blurry outline of the picture, and the later steps can sharpen that outline but not move it. So a big-then-small handoff gives almost the same picture as the big model alone, while a small start gives a picture with the small model's layout, even after the big model finishes it. The late steps add the detail: on dense prompts, which describe busy scenes, starting small and letting the big model finish scored ${fmtD(dense["s2l@0.4"].mean, "pick_score")} against the big model alone, while starting big and finishing small scored ${fmtD(dense[HERO].mean, "pick_score")}, though neither difference is clear.`],
+     `The first steps turn noise into a blurry outline of the picture, and the later steps can sharpen that outline but not move it. So a big-to-small handoff gives almost the same picture as the big model alone, while a small-to-big handoff gives a picture with the small model's layout, even after the big model finishes it. The late steps add the detail: on dense prompts, which describe busy scenes, the small-to-big handoff scored ${fmtD(dense["s2l@0.4"].mean, "pick_score")} on PickScore against the big model alone, while the big-to-small handoff scored ${fmtD(dense[HERO].mean, "pick_score")}, though neither difference is clear.`],
     ["Different prompts do best with different handoffs.",
-     `Text prompts do better when the big model starts: big-first handoffs spelled the words right about as often as the big model alone (${fmtD(text[HERO].mean, "ocr_match")} points), while small-first handoffs got them right up to ${Math.round(-textSmallFirst * 100)} points less often. Composition prompts lean slightly toward a big start on PickScore, though not clearly. Dense prompts lean the other way, toward a small start, and stylized prompts don't care: even the small model alone matched the big one. That's why our next step is a router that sorts each prompt by type and picks its best handoff.`],
+     `Text prompts do better with a big-to-small handoff. The big model alone spelled the requested words exactly right in ${spelled("large@30")}% of text images, and the big-to-small handoff did about the same, at ${spelled(HERO)}%. Small-to-big handoffs fell to as low as ${worstSmallToBig}%. Composition prompts lean slightly toward big-to-small handoffs on PickScore, though not clearly. Dense prompts lean the other way, toward small-to-big handoffs, and stylized prompts don't care: even the small model alone matched the big one. That's why our next step is a router that sorts each prompt by type and picks its best handoff.`],
+    ["Against the big model with fewer steps, the handoff is a tie.",
+     `The simplest way to save GPU time is to run the big model alone for fewer steps. Running it for ${S[match.control].segments[0][2]} steps costs about the same as a big-to-small handoff with ${S[match.handoff].segments[0][2]} big-model steps. On PickScore the handoff scored ${fmtD(match.mean, "pick_score")} against that shortcut and won on ${match.better} of ${match.n} prompts, so the two are ${same(match) ? "about even" : match.mean > 0 ? "clearly in the handoff's favour" : "clearly in the shortcut's favour"}. In our 60-prompt pilot the handoff looked clearly better. With 200 prompts, that gap closed.`],
   ];
   $("#findings-list").innerHTML = findings.map(([t, d]) => `<li><b>${esc(t)}</b><p>${esc(d)}</p></li>`).join("");
 
@@ -642,8 +645,8 @@ function sideCard(side, id) {
   const d = (v, r, m) => { if (isRef) return ""; const x = v - r, cls = x > 0 ? "delta-up" : x < 0 ? "delta-down" : ""; return ` <span class="${cls}">(${fmtD(x, m)})</span>`; };
   const opt = o => `<option value="${o}"${o === id ? " selected" : ""}>${esc(name(o))}${o === "large@30" ? ", all 30 steps (full price)" : `, ${pct0(S[o].saved)} cheaper`}</option>`;
   const opts = [
-    ["Handoff: big model starts, small model finishes", ROWS[1].ids],
-    ["Handoff: small model starts, big model finishes", ROWS[2].ids],
+    ["Big-to-small handoffs", ROWS[1].ids],
+    ["Small-to-big handoffs", ROWS[2].ids],
     ["No handoff: one model the whole way", ["large@30", ...ROWS[0].ids]],
   ].map(([label, ids]) => `<optgroup label="${label}">${ids.map(opt).join("")}</optgroup>`).join("");
   const acc = textAcc(sc), refAcc = textAcc(ref);
@@ -678,8 +681,8 @@ function renderBoard() {
   const big = ROWS[1].ids, small = ROWS[2].ids;   // big[j] and small[j] run the same steps on each model, so they cost the same
   const heads = big.map(id => { const k = S[id].segments[0][2]; return `<div class="col-head"><b>${k} big + ${D.meta.steps - k} small steps</b><span>${pct0(S[id].saved)} cheaper</span></div>`; });
   $("#matrix").innerHTML = `<div></div>${heads.join("")}
-    <div class="row-head" style="--rc:var(--large)">Big starts<span>small finishes</span></div>${big.map(id => tileHTML(id, top)).join("")}
-    <div class="row-head" style="--rc:var(--small)">Small starts<span>big finishes</span></div>${small.map(id => tileHTML(id, top)).join("")}`;
+    <div class="row-head" style="--rc:var(--large)">Big-to-small<span>handoff</span></div>${big.map(id => tileHTML(id, top)).join("")}
+    <div class="row-head" style="--rc:var(--small)">Small-to-big<span>handoff</span></div>${small.map(id => tileHTML(id, top)).join("")}`;
   $("#solo").innerHTML = SOLO.map(id => tileHTML(id, top)).join("");
   paintAll($("#how .board"));
 }
@@ -842,8 +845,8 @@ function chartSVG(W, metric, group, compact, uid) {
     const lastOf = fam => pts.filter(q => q.fam === fam).sort((a, b) => b.x - a.x)[0];
     const m2 = lastOf("large_first"), m1 = lastOf("small_first"), fw = lastOf("fewer"), sq = pts.find(p => p.fam === "small");
     const up = m2.cy <= m1.cy;
-    g += `<text class="c-label large_first" x="${m2.cx - 10}" y="${up ? Math.min(m2.hi, m2.cy) - 10 : Math.max(m2.lo, m2.cy) + 18}" text-anchor="end">Big starts</text>`;
-    g += `<text class="c-label small_first" x="${m1.cx - 10}" y="${up ? Math.max(m1.lo, m1.cy) + 18 : Math.min(m1.hi, m1.cy) - 10}" text-anchor="end">Small starts</text>`;
+    g += `<text class="c-label large_first" x="${m2.cx - 10}" y="${up ? Math.min(m2.hi, m2.cy) - 10 : Math.max(m2.lo, m2.cy) + 18}" text-anchor="end">Big to small</text>`;
+    g += `<text class="c-label small_first" x="${m1.cx - 10}" y="${up ? Math.max(m1.lo, m1.cy) + 18 : Math.min(m1.hi, m1.cy) - 10}" text-anchor="end">Small to big</text>`;
     g += `<text class="c-label fewer" x="${fw.cx - 10}" y="${fw.lo + 16 > M.t + ph ? fw.cy - 12 : fw.lo + 16}" text-anchor="end">Fewer steps</text>`;
     if (sq) g += `<text class="c-label small" x="${sq.cx + 10}" y="${sq.cy + 4}">Small only</text>`;
     g += `<text class="c-label full" x="${X(0) + 10}" y="${Y(0) - 10}">Big only</text>`;
@@ -898,8 +901,8 @@ function renderLegend() {
   $("#legend").innerHTML = `<span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="6" style="fill:var(--ink)"/></svg>Big model only</span>
     <span>${ln("var(--control)")}Big model, fewer steps</span>
     <span><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" style="fill:var(--surface);stroke:var(--control);stroke-width:2"/></svg>Small model only</span>
-    <span>${ln("var(--large)")}Big starts, small finishes</span>
-    <span>${ln("var(--small)")}Small starts, big finishes</span>`;
+    <span>${ln("var(--large)")}Big-to-small handoff</span>
+    <span>${ln("var(--small)")}Small-to-big handoff</span>`;
 }
 function renderTable() {
   const sum = D.summary[st.metric][st.cgroup];
