@@ -310,7 +310,7 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
 <header class="top">
   <div class="wrap">
     <div class="mark"><span class="glyph" aria-hidden="true"><i style="background:var(--large)"></i><i style="background:var(--large)"></i><i style="background:var(--small)"></i></span>Image Model Re-Router</div>
-    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#method">Method</a><a href="#explore">Compare images</a><a href="#findings">Findings</a><a href="#results">Charts</a></nav>
+    <nav aria-label="Sections"><a href="#handoff">How it works</a><a href="#method">Method</a><a href="#explore">Compare images</a><a href="#findings">Findings</a><a href="#results">Charts</a><a href="#notes">Next steps</a></nav>
   </div>
 </header>
 
@@ -442,6 +442,13 @@ footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--mu
         <p class="measure" style="margin-top:6px">Each type has 30 to 40 prompts, so its ranges are wider than the overall ones.</p>
         <div class="multiples" id="multiples"></div>
       </div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="wrap">
+      <div class="section-head"><h2>How sure we are, limits and next steps</h2></div>
+      <div class="method-grid" id="notes-grid"></div>
     </div>
   </section>
 
@@ -592,9 +599,12 @@ function renderStory() {
         <li><b>Run GenEval.</b> GenEval is a standard benchmark of 553 prompts that checks whether an image has the right objects, counts, colours and positions. Running it tests the handoffs on a much larger set of prompts that is widely used in research.</li>
         <li><b>Build a router that picks the handoff.</b> We will build a decision router using Jev, a System One model from TypeSafe. When someone types a prompt, it will decide which of the 6 types the prompt belongs to. It will then pick the handoff that worked best for that type, so each prompt gets the cheapest setting that keeps the quality.</li>
       </ol>`],
-    ["Project names", "In the project code, the small-model-first order is called Method 1, after T-Stitch, which used that order. The big-model-first order is called Method 2, after Hybrid SD, which used that order."],
+    ["Project names", "In the project code, the small-to-big handoff is called Method 1, after T-Stitch, which used that order. The big-to-small handoff is called Method 2, after Hybrid SD, which used that order."],
   ];
-  $("#method-grid").innerHTML = items.map(([t, p]) => `<div><h3>${t}</h3>${p.startsWith("<") ? p : `<p>${p}</p>`}</div>`).join("");
+  // the setup stays in the methodology; how sure we are, limits, next steps and project names go to the bottom of the page
+  const block = ([t, p]) => `<div><h3>${t}</h3>${p.startsWith("<") ? p : `<p>${p}</p>`}</div>`, LATER = 4;
+  $("#method-grid").innerHTML = items.slice(0, LATER).map(block).join("");
+  $("#notes-grid").innerHTML = items.slice(LATER).map(block).join("");
   $("#method-grid").firstElementChild.append($("#prompt-types"));
   const counts = D.groups.map(g => D.prompts.filter(p => p.group === g.id).length), perType = [...new Set([Math.min(...counts), Math.max(...counts)])];
   const fam = f => D.settings.filter(s => s.family === f);
